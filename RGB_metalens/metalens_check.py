@@ -10,17 +10,24 @@ from matplotlib import pyplot as plt
 from matplotlib.patches import Circle
 from scipy import special, signal
 
-filepath = sys.argv[1]
-design_region_resolution = int(sys.argv[2])
-lens = np.genfromtxt(filepath)
 
-resolution = 50
+
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument("filepath", type=str, help='path to lens file')
+parser.add_argument("--resolution", type=int, default=50, help="simulation resolution")
+args = parser.parse_args()
+filepath, resolution = args.filepath, args.resolution
+lens = np.genfromtxt(filepath)
 polar=mp.Ex
 mp.verbosity(0)
 medium = mp.Medium(index=2.4)
 
 Nx, Ny = lens.shape
-design_region_width, design_region_height = Nx/design_region_resolution, Ny/design_region_resolution
+design_region_width, design_region_height = 10, 1
+design_region_resolution = Ny
+
 pml_size = 1.0
 pml_layers = [mp.PML(pml_size)]
 
