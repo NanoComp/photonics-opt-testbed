@@ -5,13 +5,9 @@ import meep.adjoint as mpa
 import numpy as np
 from autograd import numpy as npa
 from jax import vjp, grad
-import nlopt
 from matplotlib import pyplot as plt
 from matplotlib.patches import Circle
 from scipy import special, signal
-
-
-
 import argparse
 
 parser = argparse.ArgumentParser()
