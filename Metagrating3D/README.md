@@ -30,5 +30,7 @@ As an example, optimized metagrating designs with following parameters can be fo
 - **Period**: Px = 1050/sin(50) nm, Py = 0.5* 1050 nm
 - **Thickness**: 325 nm
 - **Polarization**: TE and TM
-- **Unit Cell**: Nx = 117, Ny = 45
+- **Unit Cell**: Nx = 118, Ny = 45
+
+The deflection efficiencies for the example device in this repo are, TE: 95.14%, TM: 91.14%. 
 
