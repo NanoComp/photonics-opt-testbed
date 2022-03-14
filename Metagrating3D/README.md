@@ -7,7 +7,7 @@ A schematic of the problem setup is shown below.
 
 The 3D metagratings consist of freeform silicon patterns and deflect normally-incident light (plane wave) to the +1 diffraction order. FOM of this problem is the deflection efficiency in the desired drection for both TE and TM polarization light. The structure is periodic in x, y directions, and uniform in z direction. The relevant parameters are defined below:
 
-- **Refractive index**: The refractive index of silicon is taken from this GitHub repository, and only the real part of the index is used to simplify the design problem.
+- **Refractive index**: The refractive index of silicon is 3.45, and refractive index of silica is 1.45.
 
 - **Deflection angle**: The desired deflection angle, 𝜃, is given by the angle to the normal. The azimuth, φ, is assumed to be zero.
 
@@ -23,4 +23,12 @@ The 3D metagratings consist of freeform silicon patterns and deflect normally-in
 
 - **Efficiency**: Deflection efficiency is defined as the intensity of light deflected to the desired diffraction order, normalized to the light intensity incident from within a semi-infinite silica substrate.
 
+As an example, optimized metagrating designs with following parameters can be found in this repo:
+
+- **Wavelength**: 1050 nm
+- **Deflection angle**: 50 degree
+- **Period**: Px = 1050/sin(50) nm, Py = 0.5* 1050 nm
+- **Thickness**: 325 nm
+- **Polarization**: TE and TM
+- **Unit Cell**: Nx = 117, Ny = 45
 
