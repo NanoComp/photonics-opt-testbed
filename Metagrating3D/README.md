@@ -2,7 +2,7 @@ This is an example of 3D metagrating deflector designs. Evan Wang [@evanwang13](
 
 A schematic of the problem setup is shown below. 
 
-![schematic](jiaqi-jiang-metagrating3d/Metagrating3D/metagrating3d.png)
+![schematic](/Metagrating3D/metagrating3d.png)
 
 
 The 3D metagratings consist of freeform silicon patterns and deflect normally-incident light to the +1 diffraction order. The structure is periodic in x, y directions, and uniform in z direction. The relevant parameters are defined below:
