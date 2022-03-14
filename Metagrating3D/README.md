@@ -3,7 +3,7 @@ This is an example of 3D metagrating deflector designs. Evan Wang [@evanwang13](
 A schematic of the problem setup is shown below. 
 
 <p align="center">
-<img width="594" alt="Screen Shot 2022-03-01 at 11 19 20" src="https://user-images.githubusercontent.com/25192039/156206561-cd0fe0f2-a889-49c8-a377-ee085f62df20.png">
+<img width="594" alt="Screen Shot 2022-03-01 at 11 19 20" src="https://https://github.com/jiaqi-jiang/photonics-opt-testbed/blob/jiaqi-jiang-metagrating3d/Metagrating3D/metagrating3d.png">
 </p>
 
 
