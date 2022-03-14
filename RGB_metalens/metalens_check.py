@@ -4,14 +4,6 @@ import meep as mp
 import meep.adjoint as mpa
 import numpy as np
 from autograd import numpy as npa
-from jax import vjp, grad
-import nlopt
-from matplotlib import pyplot as plt
-from matplotlib.patches import Circle
-from scipy import special, signal
-
-
-
 import argparse
 
 parser = argparse.ArgumentParser()
@@ -26,7 +18,6 @@ medium = mp.Medium(index=2.4)
 
 Nx, Ny = lens.shape
 design_region_width, design_region_height = 10, 1
-design_region_resolution = Ny
 
 pml_size = 1.0
 pml_layers = [mp.PML(pml_size)]
@@ -80,8 +71,11 @@ opt = mpa.OptimizationProblem(
     design_regions = [design_region],
     frequencies=frequencies
 )
+#ref, _ = opt([np.zeros(Nx*Ny)], need_gradient=False)
+#print(ref) # should be [-0.16528992 -0.16579352 -0.16187553]
+ref = np.array([-0.16528992, -0.16579352, -0.16187553])
 fom, _ = opt([lens.flatten()], need_gradient=False)
-print("FOM = ",np.mean(fom/0.17))
+print("FOM = ",np.mean(fom/ref))
 
 
 Lx,Ly = design_region_width, design_region_height # size of the 2d design, correspond to the row and column of the 2d array
