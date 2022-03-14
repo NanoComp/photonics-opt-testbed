@@ -12,5 +12,5 @@ The reported FOM is calculated as an average of |E|^2 over the three wavelengths
 
 Mo generated structures with lengthscales 70nm, 148nm, and 180nm in Meep, and found FOMs of 22.14, 14.21, and 13.86. A plot of FOMs vs Lengthscale is shown below. 
 <p align="center">
-<img src="https://user-images.githubusercontent.com/25192039/156216247-450186af-5c7f-4460-9d78-563cfb53e1da.png" width="600" />
+<img src="https://github.com/mochen4/photonics-opt-testbed/blob/RGB/RGB_metalens/Result.png" width="600" />
 </p>
