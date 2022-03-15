@@ -5,7 +5,7 @@ A schematic of the problem setup is shown below.
 ![schematic](/Metagrating3D/metagrating3d.png)
 
 
-The 3D metagratings consist of freeform silicon patterns and deflect normally-incident light (plane wave) to the +1 diffraction order. FOM of this problem is the deflection efficiency in the desired drection for both TE and TM polarization light. The structure is periodic in x, y directions, and uniform in z direction. The relevant parameters are defined below:
+The 3D metagratings consist of freeform silicon patterns and deflect normally-incident light (plane wave) to the +1 diffraction order. FOM of this problem is the deflection efficiency in the desired drection for both TE and TM polarization light: FOM = (1/eff_TE + 1/eff_TM)^(-1). The structure is periodic in x, y directions, and uniform in z direction. The relevant parameters are defined below:
 
 - **Refractive index**: The refractive index of silicon is 3.45, and refractive index of silica is 1.45.
 
@@ -21,7 +21,7 @@ The 3D metagratings consist of freeform silicon patterns and deflect normally-in
 
 - **Symmetry**: Reflection symmetry in the y-direction (across the x-axis) is enforced in all devices.
 
-- **Efficiency**: Deflection efficiency is defined as the intensity of light deflected to the desired diffraction order, normalized to the light intensity incident from within a semi-infinite silica substrate.
+- **Efficiency**: Deflection efficiency is defined as the intensity of light deflected to the desired diffraction order, normalized to the light intensity incident from within a semi-infinite silica substrate. 
 
 As an example, optimized metagrating designs with following parameters can be found in this repo:
 
@@ -32,5 +32,5 @@ As an example, optimized metagrating designs with following parameters can be fo
 - **Polarization**: TE and TM
 - **Unit Cell**: Nx = 118, Ny = 45
 
-The deflection efficiencies for the example device in this repo are, TE: 95.14%, TM: 91.14%. 
+The deflection efficiencies for the example device in this repo are, TE: 95.14%, TM: 91.14%. `device.mat` file contains all optimization parameters and final device pattern in matlab format while `device.csv` is the optimized device pattern (2D matrix) in csv format. 
 
