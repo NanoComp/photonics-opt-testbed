@@ -80,6 +80,5 @@ print("FOM = ",np.mean(fom/ref))
 
 Lx,Ly = design_region_width, design_region_height # size of the 2d design, correspond to the row and column of the 2d array
 obj = ruler.morph([Lx,Ly])
-len_arr = np.linspace(0.01,1.0,500) # array of lengths, which include possible
 print("minimum_length = ",obj.minimum_length(lens))
     
