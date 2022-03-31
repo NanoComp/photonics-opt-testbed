@@ -32,5 +32,10 @@ As an example, optimized metagrating designs with following parameters can be fo
 - **Polarization**: TE and TM
 - **Unit Cell**: Nx = 118, Ny = 45
 
-The deflection efficiencies for the example device in this repo are, TE: 95.14%, TM: 91.14%. `device.mat` file contains all optimization parameters and final device pattern in matlab format while `device.csv` is the optimized device pattern (2D matrix) in csv format. 
+The deflection efficiencies for the example device in this repo are:
+- **Device1**:, TE 87%, TM 90%
+- **Device2**:, TE 89%, TM 88%
+- **Device3**:, TE 89%, TM 90%
+
+`device.mat` file contains all optimization parameters and final device pattern in matlab format while `device.csv` is the optimized device pattern (2D matrix) in csv format. 
 
