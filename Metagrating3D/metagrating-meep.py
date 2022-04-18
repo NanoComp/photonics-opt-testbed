@@ -1,19 +1,14 @@
-# compute the transmittance of the m=+1 order
+# Computes the transmittance of the m=+1 order
 # for a 3d metagrating with the 2d design
 # imported from the file device1.csv
-# and compare the result with the expected value
-# from RCWA (Reticolo)
 
 import meep as mp
 import math
 import numpy as np
-import matplotlib
-matplotlib.use('agg')
-import matplotlib.pyplot as plt
 
 
 def metagrating(P_pol: bool):
-    resolution = 50  # pixels/μm
+    resolution = 100  # pixels/μm
 
     nSi = 3.45
     Si = mp.Medium(index=nSi)
@@ -28,10 +23,10 @@ def metagrating(P_pol: bool):
     px = wvl/math.sin(theta_d)  # period in x
     py = 0.5*wvl  # period in y
 
-    dpml = wvl  # PML thickness
+    dpml = 1.0  # PML thickness
     gh = 0.325  # grating height
-    dsub = 3.0  # substrate thickness
-    dair = 3.0  # air padding
+    dsub = 5.0  # substrate thickness
+    dair = 5.0  # air padding
 
     sz = dpml+dsub+gh+dair+dpml
 
@@ -42,15 +37,12 @@ def metagrating(P_pol: bool):
     # periodic boundary conditions
     k_point = mp.Vector3()
 
-    ## disabled due to https://github.com/NanoComp/meep/issues/132
-    # symmetries = [mp.Mirror(direction=mp.Y)]
-
     # plane of incidence is XZ
-    # P/TM polarization: Ex, S/TE polarization: Ey
     src_cmpt = mp.Ex if P_pol else mp.Ey
-    sources = [mp.Source(src=mp.GaussianSource(fcen,fwidth=0.2*fcen),
+    src_pt = mp.Vector3(0,0,-0.5*sz+dpml+0.5*dsub)
+    sources = [mp.Source(src=mp.GaussianSource(fcen,fwidth=0.1*fcen),
                          size=mp.Vector3(px,py,0),
-                         center=mp.Vector3(0,0,-0.5*sz+dpml),
+                         center=src_pt,
                          component=src_cmpt)]
 
     sim = mp.Simulation(resolution=resolution,
@@ -64,14 +56,17 @@ def metagrating(P_pol: bool):
                                 0,
                                 1,
                                 mp.ModeRegion(center=mp.Vector3(0,0,0.5*sz-dpml),
-                                          size=mp.Vector3(px,py,0)))
+                                              size=mp.Vector3(px,py,0)))
 
-    sim.run(until_after_sources=mp.stop_when_dft_decayed())
+    stop_cond = mp.stop_when_fields_decayed(10,src_cmpt,src_pt,1e-7)
+    sim.run(until_after_sources=stop_cond)
 
     input_flux = mp.get_fluxes(flux)
 
     sim.reset_meep()
 
+    # image resolution is ~340 pixels/μm and thus
+    # Meep resolution should not be larger than ~half this value
     weights = np.genfromtxt('device1.csv',delimiter=',')
     Nx, Ny = weights.shape
 
@@ -98,31 +93,26 @@ def metagrating(P_pol: bool):
                                 mp.ModeRegion(center=mp.Vector3(0,0,0.5*sz-dpml),
                                               size=mp.Vector3(px,py,0)))
 
-    sim.run(until_after_sources=mp.stop_when_dft_decayed())
+    sim.run(until_after_sources=stop_cond)
 
     res = sim.get_eigenmode_coefficients(flux,
                                          mp.DiffractedPlanewave((1,0,0),
-                                                                mp.Vector3(0,0,1),
+                                                                mp.Vector3(1,0,0),
                                                                 0 if P_pol else 1,
                                                                 1 if P_pol else 0))
 
     coeffs = res.alpha
-    Tmeep = abs(coeffs[0,0,0])**2 / input_flux[0]
-
-    n1 = 1.0
-    n2 = nSiO2
-    Tfresnel = 1 - (n1-n2)**2 / (n1+n2)**2
-    diff_eff_P = 0.9114 # P-pol. diffraction efficiency computed using Reticolo (RCWA)
-    diff_eff_S = 0.9514 # S-pol. diffraction efficiency computed using Reticolo (RCWA)
-    # convert diffraction efficiency into transmittance in the Z direction
-    Treticolo = (diff_eff_P if P_pol else diff_eff_S) * Tfresnel * math.cos(theta_d)
-    err = abs(Tmeep - Treticolo) / Treticolo
-    print("err:, {}, {:.6f} (Meep), {:.6f} (reticolo), {:.6f} (error),".format('P' if P_pol else 'S',Tmeep,Treticolo,err))
+    tran = abs(coeffs[0,0,0])**2 / input_flux[0]
+    print("tran:, {}, {:.6f}".format('P' if P_pol else 'S',tran))
 
     # for debugging:
-    # visualize cross sections of the computational cell
-    # to ensure that metagrating matches expected design
+    # visualize three orthogonal cross sections of the 3D cell
+    # to ensure that structure matches expected design
     if 0:
+        import matplotlib
+        matplotlib.use('agg')
+        import matplotlib.pyplot as plt
+
         output_plane = mp.Volume(center=mp.Vector3(0,0,0.5*sz-dpml-dair-0.5*gh),
                                  size=mp.Vector3(px,py,0))
         plt.figure()
@@ -144,7 +134,6 @@ def metagrating(P_pol: bool):
                    eps_parameters={'resolution':100})
         plt.savefig('cell_xz.png',dpi=150,bbox_inches='tight')
 
-    return err
 
 if __name__ == '__main__':
     metagrating(False)
