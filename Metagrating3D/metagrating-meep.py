@@ -1,5 +1,5 @@
 # Computes the transmittance of the m=+1 order
-# for a 3d metagrating with the 2d design
+# for a 3D metagrating with the 2D design
 # imported from the file device1.csv
 
 import meep as mp
@@ -85,7 +85,8 @@ def metagrating(P_pol: bool):
                         sources=sources,
                         geometry=geometry,
                         boundary_layers=boundary_layers,
-                        k_point=k_point)
+                        k_point=k_point,
+                        eps_averaging=False)
 
     flux = sim.add_mode_monitor(fcen,
                                 0,
