@@ -33,9 +33,11 @@ As an example, optimized metagrating designs with following parameters can be fo
 - **Unit Cell**: Nx = 472, Ny = 180
 
 The deflection efficiencies for the example device in this repo are:
-- **Device1**: TM 95.7%
-- **Device2**: TM 93.3%
-- **Device3**: TM 96.6%
+- **Device1**: TM 95.7% (RETICOLO/RCWA), 95.5% (MEEP/FDTD)
+- **Device2**: TM 93.3% (RETICOLO/RCWA), 93.6% (MEEP/FDTD)
+- **Device3**: TM 96.6% (RETICOLO/RCWA), 95.0% (MEEP/FDTD)
+
+The MEEP results were obtained using `metagrating.meep.py`.
 
 `device.mat` file contains all optimization parameters and final device pattern in matlab format while `device.csv` is the optimized device pattern (2D matrix) in csv format. 
 
