@@ -5,7 +5,7 @@ A schematic of the problem setup is shown below.
 ![schematic](/Metagrating3D/metagrating3d.png)
 
 
-The 3D metagratings consist of freeform silicon patterns and deflect normally-incident light (plane wave) to the +1 diffraction order. FOM of this problem is the deflection efficiency in the desired drection for both TE and TM polarization light: FOM = (1/eff_TE + 1/eff_TM)^(-1). The structure is periodic in x, y directions, and uniform in z direction. The relevant parameters are defined below:
+The 3D metagratings consist of freeform silicon patterns and deflect normally-incident light (plane wave) to the +1 diffraction order. FOM of this problem is the deflection efficiency in the desired drection for TM polarization light: FOM = eff_TM. The structure is periodic in x, y directions, and uniform in z direction. The relevant parameters are defined below:
 
 - **Refractive index**: The refractive index of silicon is 3.45, and refractive index of silica is 1.45.
 
@@ -33,9 +33,9 @@ As an example, optimized metagrating designs with following parameters can be fo
 - **Unit Cell**: Nx = 472, Ny = 180
 
 The deflection efficiencies for the example device in this repo are:
-- **Device1**: TE 86%, TM 89%
-- **Device2**: TE 89%, TM 88%
-- **Device3**: TE 89%, TM 90%
+- **Device1**: TM 95.7%
+- **Device2**: TM 93.3%
+- **Device3**: TM 96.6%
 
 `device.mat` file contains all optimization parameters and final device pattern in matlab format while `device.csv` is the optimized device pattern (2D matrix) in csv format. 
 
