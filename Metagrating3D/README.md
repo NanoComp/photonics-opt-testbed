@@ -1,4 +1,4 @@
-This is an example of 3D metagrating deflector designs. Evan Wang [@evanwang13](https://github.com/evanwang13) generated designs using his own code and reported the FOMs. The simulation is performed by [RETICOLO](https://www.lp2n.institutoptique.fr/equipes-de-recherche-du-lp2n/light-complex-nanostructures) RCWA. 
+This is an example of 3D metagrating deflector designs. Evan Wang [@evanwang13](https://github.com/jonfanlab/Metagrating-Topology-Optimization) generated designs using his own code and reported the FOMs. The simulation is performed by [RETICOLO](https://www.lp2n.institutoptique.fr/equipes-de-recherche-du-lp2n/light-complex-nanostructures) RCWA. 
 
 A schematic of the problem setup is shown below. 
 
