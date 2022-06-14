@@ -12,5 +12,5 @@ The design problem is stated as
  The relevant parameters are defined below:
  - **Discretization**: 408x40 bilinear quadrilateral elements
  - **Regularization**: density filter (filter radius: 1/8a) + projection
- - **Continuation scheme in the projection**: For every 40th iteration or if ( f  < 1e 􀀀 3 or f < 1e 􀀀 3 g and  < 50, set  = 1:3.
-If  < 1e 􀀀 4 or f < 1e 􀀀 4, terminate.
+ - **Continuation scheme in the projection**: 	 For every $40$th iteration or if ( \{ $\Delta \rho< 1e-3$ or $\Delta f <1e-3$ \} and $\beta < 50$,   set $\beta=1.3 \beta$.  \\
+  If $\Delta \rho < 1e-4$ or $\Delta f < 1e-4 $,  terminate. 
