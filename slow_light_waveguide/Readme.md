@@ -3,4 +3,4 @@ This is an example of the inverse design of slow light waveguide design based on
 
 A schematic of the problem setup is shown below. 
 
-![schematic](slow_light_waveguide/Illustration.png)
+![schematic](/slow_light_waveguide/Illustration.png)
