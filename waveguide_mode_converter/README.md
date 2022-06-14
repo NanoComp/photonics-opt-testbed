@@ -23,6 +23,15 @@ This is a waveguide mode converter test problem. The design objective is to maxi
 These parameter values correspond to the mode converter demonstrated in
 [Inverse Design of Photonic Devices with Strict Foundry Fabrication Constraints](https://doi.org/10.1021/acsphotonics.2c00313).
 
+## Designs
+
+Mode converter designs are under the `designs/` subfolder.
+
+| File                                               | Description                                             |
+|----------------------------------------------------|---------------------------------------------------------|
+| converter_schubert_circle_x33491673_w307_s134.csv  | Circular brush design from Schubert et al. (2022)       |
+| converter_schubert_notched_x33491673_w183_s159.csv | Notched-square brush design from Schubert et al. (2022) |
+
 ## Usage
 
 The mode converter test problem can be run on a list of specified designs via
