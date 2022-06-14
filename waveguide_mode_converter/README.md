@@ -27,10 +27,10 @@ These parameter values correspond to the mode converter demonstrated in
 
 Mode converter designs are under the `designs/` subfolder.
 
-| File                                               | Description                                             |
-|----------------------------------------------------|---------------------------------------------------------|
-| converter_schubert_circle_x33491673_w307_s134.csv  | Circular brush design from Schubert et al. (2022)       |
-| converter_schubert_notched_x33491673_w183_s159.csv | Notched-square brush design from Schubert et al. (2022) |
+| File                                               | Description                                                                                             |
+|----------------------------------------------------|---------------------------------------------------------------------------------------------------------|
+| converter_schubert_circle_x33491673_w307_s134.csv  | Circular brush design from [Schubert et al. (2022)](https://doi.org/10.1021/acsphotonics.2c00313)       |
+| converter_schubert_notched_x33491673_w183_s159.csv | Notched-square brush design from [Schubert et al. (2022)](https://doi.org/10.1021/acsphotonics.2c00313) |
 
 ## Usage
 
