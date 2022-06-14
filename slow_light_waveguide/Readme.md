@@ -17,6 +17,6 @@ The design problem is stated as
  
 - **Interpolation of the relative permittivity of element e **:  
 
-   $\frac{1}{\varepsilon^{\eta}_e}=(1- \overline{\rho}^{\eta}_e )\frac{1}{\varepsilon_{\rm{air}}} $
+   $\frac{1}{\varepsilon^{\eta}_e}=(1- \bar{\rho}^{\eta}_e )\frac{1}{\varepsilon_{\rm{air}}} $
   
    - 
