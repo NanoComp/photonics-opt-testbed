@@ -19,14 +19,14 @@ The design problem is stated as
  
 - **Interpolation of the relative permittivity of element e**:
 
-    $\frac{1}{\varepsilon^{\eta}_e}=(1-\bar{\rho}^{\eta}_e)\frac{1}{\varepsilon_A}+\overline{\rho}^{\eta}_e  \frac{1}{\varepsilon_S}$
+    $\frac{1}{\varepsilon^{\eta}_e}=(1-\bar{\rho}^{\eta}_e)\frac{1}{\varepsilon_A}+\overline{\rho}^{\eta}_e  \frac{1}{\varepsilon_S}, \quad   \varepsilon_A=1 \quad,\varepsilon_S=3.476^2$
   
 - **Robust formulation**: $ \eta \in [0.35, 0.5, 0.65]$.
 - **Target group index**: $n^*_g=25$
 - **Target $k$ points**: Target $k$ points
 - **Initial guess**:  $a_1=0.9$ and $a_2=1.1$  
 
-The blue print design  with $\eta=0.5$ obtained using the robust optimization formulation considering the parameters above and corresponding performance are shown in the figure below.  `Design_Dnum_2.csv`  is the corresponding csv format design pattern. 
+The blue print design  with $\eta=0.5$ obtained using the robust optimization formulation considering the parameters above and corresponding performance are shown in the figure below. [Design_Dnum_2.csv](https://github.com/NanoComp/photonics-opt-testbed/blob/main/slow_light_waveguide/Design_Dnum_2.csv) is the corresponding csv format design pattern. 
 
 
 ![schematic](/slow_light_waveguide/Resp_Dnum_2_FF.png)
