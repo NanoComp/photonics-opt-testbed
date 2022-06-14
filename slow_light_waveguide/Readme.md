@@ -8,3 +8,6 @@ The considerd supercell, initial design and corresponding design domain are illu
 The design problem is stated as
 
 ![schematic](/slow_light_waveguide/Optimizationformulation.PNG)
+
+ The relevant parameters are defined below:
+ - **Discretization**: 408x40 bilinear quadrilateral elements
