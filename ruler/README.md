@@ -1,4 +1,4 @@
-This is a small program for computing the minimum length scale of a design pattern given by topology optimization. The theoretical basis of the method lies in morphological transformations [1,2].
+This is a small program for computing the minimum length scale of a design pattern given by topology optimization. The theoretical basis of the method lies in morphological transformations [1,2]. Some code is copied or adapted from the filter.py file in Meep [3].
 
 
 This method is outlined as follows.
@@ -11,6 +11,7 @@ This method is outlined as follows.
 
 
 References
-[1] L. Hägg and E.Wadbro, On minimum length scale control in density based topology optimization, Struct. Multidisc Optim. 58(3), 1015–1032 (2018).
-[2] Rafael C. Gonzalez and Richard E. Woods, Digital Image Processing (Fourth Edition), Chapter 9 (Pearson, 2017).
+[1] Linus Hägg and Eddie Wadbro, On minimum length scale control in density based topology optimization, Struct. Multidisc Optim. 58(3), 1015–1032 (2018).  
+[2] Rafael C. Gonzalez and Richard E. Woods, Digital Image Processing (Fourth Edition), Chapter 9 (Pearson, 2017).  
+[3] Alec Hammond et al., Adjoint solver in Meep: https://github.com/smartalecH/meep/blob/jax_rebase/python/adjoint/filters.py
 
