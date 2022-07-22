@@ -55,7 +55,7 @@ def minimum_length(arr,phys_size,margin_size=np.zeros((3,2)),threshold=0.5,proj_
                 if pixel_in==0: radii[0],radii[1] = radius,(radius+radii[2])/2 # radius is too small
                 else: radii[1],radii[2] = (radius+radii[0])/2,radius # radius is still large
 
-            return radii[1]*2
+            return radii[2]*2
 
         else: # radius_ub is not a good starting radius of the binary search
             radius_initial,pixel_in_initial = radius_ub/1.5,0 # decrease the radius
@@ -74,45 +74,72 @@ def minimum_length(arr,phys_size,margin_size=np.zeros((3,2)),threshold=0.5,proj_
                     pixel_in = in_pixel_count(diff_image,margin_number,dims,threshold)
                     if pixel_in==0: radii[0],radii[1] = radius,(radius+radii[2])/2
                     else: radii[1],radii[2] = (radius+radii[0])/2,radius
-                return radii[1]*2
+                return radii[2]*2
             else: # pixel_in_initial==0, fail to find a starting radius
                 print("The minimum length scale is at least ", radius_ub*2)
                 return
 
+def proper_pad(arr,pad_to):
+    '''
+    arr: Input array. Must be 2D.
+    pad_to: int. Total size to be padded to.
+    '''
+    pad_size = pad_to-2*np.array(arr.shape)+1
+
+    if arr.ndim == 2:
+        out = np.concatenate((np.concatenate((arr, np.zeros((pad_size[0],arr.shape[1])), np.flipud(arr[1:,:]))),
+                              np.zeros((pad_to[0],pad_size[1])),
+                              np.concatenate((np.fliplr(arr[:,1:]), np.zeros((pad_size[0],arr.shape[1]-1)), np.flip(arr[1:,1:])))),
+                             axis=1)
+    elif arr.ndim == 3:
+        upper = np.concatenate((np.concatenate((arr, np.zeros((pad_size[0],arr.shape[1],arr.shape[2])), np.flip(arr[1:,:,:],0))),
+                                np.zeros((pad_to[0],pad_size[1],arr.shape[2])),
+                                np.concatenate((np.flip(arr[:,1:,:],1), np.zeros((pad_size[0],arr.shape[1]-1,arr.shape[2])),
+                                                np.flip(arr[1:,1:,:],(0,1))))),axis=1)
+        middle = np.zeros((pad_to[0],pad_to[1],pad_size[2]))
+        lower = np.concatenate((np.concatenate((np.flip(arr[:,:,1:],2), np.zeros((pad_size[0],arr.shape[1],arr.shape[2]-1)),
+                                                np.flip(arr[1:,:,1:],(0,2)))),
+                                np.zeros((pad_to[0],pad_size[1],arr.shape[2]-1)),
+                                np.concatenate((np.flip(arr[:,1:,1:],(1,2)), np.zeros((pad_size[0],arr.shape[1]-1,arr.shape[2]-1)),
+                                                np.flip(arr[1:,1:,1:])))),axis=1)
+
+        out = np.concatenate((upper,middle,lower),axis=2)
+    else:
+        raise AssertionError("Function for this dimension is not implemented!")
+
+    return out
+            
 def simple_filter(arr,kernel):
-    arr_shape = arr.shape
-    npad = *((s, s) for s in arr_shape),
+    arr_sh = arr.shape
+    npad = *((s, s) for s in arr_sh),
 
     # pad the kernel and the input array to avoid circular convolution and to ensure boundary conditions
-    kernel = np.pad(kernel,pad_width=npad, mode='edge')
+    kernel = proper_pad(kernel,np.array(arr_sh)*3)
+    kernel = np.squeeze(kernel) / np.sum(kernel) # Normalize the kernel
     arr = np.pad(arr,pad_width=npad, mode='edge')
 
     K, A = np.fft.fftn(kernel), np.fft.fftn(arr) # transform to frequency domain for fast convolution
-    KA = K * A # convolution, i.e., multiplication in frequency domain
-    arr_out = np.fft.fftshift(np.real(np.fft.ifftn(KA)))
-    arr_out = _centered(arr_out,arr_shape) # Remove all the extra padding
+    arr_out = np.real(np.fft.ifftn(K * A)) # convolution
 
-    return arr_out
-            
+    return center(arr_out,arr_sh) # Remove all the extra padding
+
 def cylindrical_filter(arr,radius,phys_size):
-    arr = guarantee_3d(arr)
-    dims = len(phys_size)
+    arr = guarantee_2or3d(arr)
 
-    x_tick = np.linspace(-phys_size[0]/2,phys_size[0]/2,arr.shape[0])
-    y_tick = np.linspace(-phys_size[1]/2,phys_size[1]/2,arr.shape[1])
-    if dims == 2:
-        z_tick = [0]
-    elif dims == 3:
-        z_tick = np.linspace(-phys_size[2]/2,phys_size[2]/2,arr.shape[2])
+    x_tick = np.arange(0,phys_size[0]/2,phys_size[0]/arr.shape[0])
+    y_tick = np.arange(0,phys_size[1]/2,phys_size[1]/arr.shape[1])
+
+    if len(phys_size) == 2:
+        X, Y = np.meshgrid(x_tick, y_tick, sparse=True, indexing='ij') # grid over the entire design region
+        kernel = X**2+Y**2 < radius**2
+    elif len(phys_size) == 3:
+        z_tick = np.arange(0,phys_size[2]/2,phys_size[2]/arr.shape[2])
+        X, Y, Z = np.meshgrid(x_tick, y_tick, z_tick, sparse=True, indexing='ij')
+        kernel = X**2+Y**2+Z**2 < radius**2
     else:
-        raise AssertionError("Code for this dimension is not implemented!")
-    X, Y, Z = np.meshgrid(x_tick, y_tick, z_tick, sparse=True, indexing='ij') # grid over the entire design region
+        raise AssertionError("Function for this dimension is not implemented!")
 
-    kernel = X**2+Y**2+Z**2 <= radius**2 # Calculate the kernel
-    kernel = np.squeeze(kernel) / np.sum(kernel.flatten()) # Normalize the kernel
-    arr_out = simple_filter(np.squeeze(arr),kernel) # Filter the input array
-
-    return arr_out
+    return simple_filter(arr,kernel) # Filter the input array
 
 def heaviside_erosion(arr,radius,phys_size,proj_strength):
     arr_hat = cylindrical_filter(arr,radius,phys_size)
@@ -173,23 +200,21 @@ def adjacency(index): # return adjacent indices
             index[1],index[1],index[1],index[1]-1,index[1]+1,index[1],index[1]],[
             index[2],index[2]-1,index[2]+1,index[2],index[2],index[2],index[2]]
     else:
-        raise AssertionError("Code for this dimension is not implemented!")
+        raise AssertionError("Function for this dimension is not implemented!")
 
-def guarantee_3d(arr):
+def guarantee_2or3d(arr):
     arr = np.squeeze(arr)
-    if arr.ndim == 0:
-        arr_out = np.expand_dims(arr, axis=(0, 1, 2))
-    elif arr.ndim == 1:
-        arr_out = np.expand_dims(arr, axis=(1, 2))
-    elif arr.ndim == 2:
-        arr_out = np.expand_dims(arr, axis=(2))
-    elif arr.ndim == 3:
+    if arr.ndim == 2 or arr.ndim == 3:
         arr_out = arr
+    elif arr.ndim == 1:
+        arr_out = np.expand_dims(arr, axis=(1, 2)) 
+    elif arr.ndim == 0:
+        arr_out = np.expand_dims(arr, axis=(0, 1, 2))   
     else:
         raise AssertionError("Too many dimensions!")
     return arr_out
 
-def _centered(arr, newshape):
+def center(arr, newshape):
     '''Return the center newshape portion of the array.
     Helper function that reformats the padded array of the fft filter operation.
     Borrowed from scipy:
@@ -220,6 +245,6 @@ def in_pixel_count(arr,margin_number=np.ones((2,2),dtype=int),dims=2,threshold=0
                     if (arr[adjacency([ii,jj,kk])]>threshold).all():
                         pixel_int += 1
     else:
-        raise AssertionError("Code for this dimension is not implemented!")
+        raise AssertionError("Function for this dimension is not implemented!")
 
     return pixel_int
