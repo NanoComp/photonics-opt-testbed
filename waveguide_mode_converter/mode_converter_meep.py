@@ -42,7 +42,7 @@ def mode_converter(design_fname: str):
 
     eig_parity = mp.ODD_Z
     src_pt = mp.Vector3(-0.5*sx+dpml,0)
-    sources = [mp.EigenModeSource(src=mp.GaussianSource(fcen,fwidth=df),
+    sources = [mp.EigenModeSource(mp.GaussianSource(fcen,fwidth=df),
                                   size=mp.Vector3(0,sy),
                                   center=src_pt,
                                   eig_band=1,
@@ -138,6 +138,9 @@ def mode_converter(design_fname: str):
     coeffs = res.alpha
     tran = np.abs(coeffs[0,:,0])**2 / input_flux
     tran_flux = np.array(mp.get_fluxes(tran_mon))
+
+    # force the garbage collection
+    sim.reset_meep()
 
     sparam_to_dB = lambda s: 20 * np.log10(s)
 
