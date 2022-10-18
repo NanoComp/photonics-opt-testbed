@@ -1,9 +1,13 @@
-# Topology optimization of the waveguide mode converter using Meep's adjoint
-# solver. The optimization involves minimizing the worst case of R + (1-T)
-# where R is $|S_{11}|^2$ for mode 1 and T is $|S_{21}|^2$ for mode 2
-# across six different wavelengths. The minimum linewidth criteria is 90 nm.
-# The optimization uses the method of moving asymptotes (MMA) algorithm
-# from NLopt.
+"""Topology optimization of the waveguide mode converter using
+   Meep's adjoint solver from A M. Hammond et al., Optics Express,
+   Vol. 30, pp. 4467-4491 (2022). doi.org/10.1364/OE.442074
+
+The worst-case optimization is based on minimizing the maximum
+of R + (1-T) where R is $|S_{11}|^2$ for mode 1 and T is $|S_{21}|^2$
+for mode 2 across six different wavelengths. The minimum linewidth
+criteria is 90 nm. The optimization uses the method of moving
+asymptotes (MMA) algorithm from NLopt.
+"""
 
 import numpy as np
 import matplotlib
@@ -11,10 +15,8 @@ matplotlib.use('agg')
 import matplotlib.pyplot as plt
 from autograd import numpy as npa, tensor_jacobian_product
 import nlopt
-
 import meep as mp
 import meep.adjoint as mpa
-
 
 resolution = 50  # pixels/μm
 
@@ -52,7 +54,7 @@ fcen = 0.5*(frq_min+frq_max)
 df = frq_max-frq_min
 
 eig_parity = mp.ODD_Z
-src_pt = mp.Vector3(-0.5*sx+dpml,0)
+src_pt = mp.Vector3(-0.5*sx+dpml,0,0)
 
 nSiO2 = 1.5
 SiO2 = mp.Medium(index=nSiO2)
@@ -71,23 +73,23 @@ stop_cond = mp.stop_when_fields_decayed(50, mp.Ez, refl_pt, 1e-8)
 
 def mapping(x, eta, beta):
     """A differentiable mapping function which applies, in order,
-       the following sequence of transformations: (1) mirror symmetry
-       along the $x$ axis, (2) convolution with a conic filter, and
-       (3) a projection via a hyperbolic tangent.
+       the following sequence of transformations to the design weights:
+       (1) mirror symmetry along the $x$ axis, (2) convolution with a
+       conic filter, and (3) projection via a hyperbolic tangent.
 
     Args:
-      x: design parameters as 1d array of size Nx*Ny.
-      eta: erosion/dilation parameter for the conic filter.
-      beta: bias parameter for the hyperbolic tangent.
+      x: design weights as a 1d array of size Nx*Ny.
+      eta: erosion/dilation parameter for the projection.
+      beta: bias parameter for the projection.
     """
-    x = x.reshape(Nx,Ny)
-    x = (
-        npa.flipud(x) + x
+    mirrored_field = x.reshape(Nx,Ny)
+    mirrored_field = (
+        npa.flipud(mirrored_field) + mirrored_field
     ) / 2
-    x = x.flatten()
+    mirrored_field = mirrored_field.flatten()
 
     filtered_field = mpa.conic_filter(
-        x,
+        mirrored_field,
         filter_radius,
         design_region_size.x,
         design_region_size.y,
@@ -107,11 +109,12 @@ def f(x, grad):
     """Objective function for the epigraph formulation.
 
     Args:
-      x: epigraph variable and design parameters as 1d array of size 1+Nx*Ny.
+      x: 1d array of size 1+Nx*Ny containing epigraph variable (first element)
+         and design weights.
       grad: gradient as 1d array of size 1+Nx*Ny.
     """
-    t = x[0]  # "dummy" parameter for epigraph
-    v = x[1:] # design parameters
+    t = x[0]  # epigraph variable
+    v = x[1:] # design weights
     if grad.size > 0:
         grad[0] = 1
         grad[1:] = 0
@@ -122,16 +125,16 @@ def c(result, x, gradient, eta, beta):
     """Constraint function for the epigraph formulation.
 
        Args:
-         x: design parameters.
-         gradient: Jacobian matrix with dims (Nx*Ny design parameters,
-                   frequencies).
-         eta: erosion/dilation parameter for conic filter.
+         x: 1d array of size 1+Nx*Ny containing epigraph variable (first
+            element) and design weights.
+         gradient: Jacobian matrix with dimensions (1+Nx*Ny, num. wavelengths).
+         eta: erosion/dilation parameter for projection.
          beta: bias parameter for projection.
     """
     print(f"iteration: {cur_iter[0]}, eta: {eta}, beta: {beta}")
 
-    t = x[0]  # dummy parameter for epigraph
-    v = x[1:] # design parameters
+    t = x[0]  # epigraph variable
+    v = x[1:] # design weights
 
     f0, dJ_du = opt([mapping(v, eta, beta)])
 
@@ -146,7 +149,7 @@ def c(result, x, gradient, eta, beta):
         )
 
     if gradient.size > 0:
-        gradient[:, 0] = -1  # gradient w.r.t. "t" (dummy parameter)
+        gradient[:, 0] = -1  # gradient w.r.t. epigraph variable ("t")
         gradient[:, 1:] = my_grad.T  # gradient w.r.t. each frequency objective
 
     result[:] = np.real(f0) - t
@@ -157,41 +160,55 @@ def c(result, x, gradient, eta, beta):
 
 
 def straight_waveguide():
-    """Computes the DFT fields from a straight waveguide for use
-       as normalization of the reflectance measurement.
+    """Computes the DFT fields from the mode source in a straight waveguide
+       for use as normalization of the reflectance measurement during the
+       optimization.
 
     Returns:
-      NumPy Array of DFT fields from normalization run
-      and DFT fields object returned by `get_flux_data`.
+      1d array of DFT fields and DFT fields object returned by `get_flux_data`.
     """
-    sources = [mp.EigenModeSource(src=mp.GaussianSource(fcen,fwidth=df),
-                                  size=mp.Vector3(0,sy,0),
-                                  center=src_pt,
-                                  eig_band=1,
-                                  eig_parity=eig_parity)]
+    sources = [
+        mp.EigenModeSource(
+            src=mp.GaussianSource(fcen,fwidth=df),
+            size=mp.Vector3(0,sy,0),
+            center=src_pt,
+            eig_band=1,
+            eig_parity=eig_parity,
+        )
+    ]
 
-    geometry = [mp.Block(size=mp.Vector3(mp.inf,w,mp.inf),
-                         center=mp.Vector3(),
-                         material=Si)]
+    geometry = [
+        mp.Block(
+            size=mp.Vector3(mp.inf,w,mp.inf),
+            center=mp.Vector3(),
+            material=Si,
+        )
+    ]
 
-    sim = mp.Simulation(resolution=resolution,
-                        default_material=SiO2,
-                        cell_size=cell_size,
-                        sources=sources,
-                        geometry=geometry,
-                        boundary_layers=pml_layers,
-                        k_point=mp.Vector3())
+    sim = mp.Simulation(
+        resolution=resolution,
+        default_material=SiO2,
+        cell_size=cell_size,
+        sources=sources,
+        geometry=geometry,
+        boundary_layers=pml_layers,
+        k_point=mp.Vector3(),
+    )
 
-    refl_mon = sim.add_mode_monitor(frqs,
-                                    mp.ModeRegion(center=refl_pt,
-                                                  size=mp.Vector3(0,sy,0)),
-                                    yee_grid=True)
+    refl_mon = sim.add_mode_monitor(
+        frqs,
+        mp.ModeRegion(center=refl_pt,
+                      size=mp.Vector3(0,sy,0)),
+        yee_grid=True,
+    )
 
     sim.run(until_after_sources=stop_cond)
 
-    res = sim.get_eigenmode_coefficients(refl_mon,
-                                         [1],
-                                         eig_parity=eig_parity)
+    res = sim.get_eigenmode_coefficients(
+        refl_mon,
+        [1],
+        eig_parity=eig_parity,
+    )
 
     coeffs = res.alpha
     input_flux = np.abs(coeffs[0,:,0])**2
@@ -201,54 +218,70 @@ def straight_waveguide():
 
 
 def converter_optimization(input_flux, input_flux_data):
-    """Sets ups the adjoint optimization.
+    """Sets up the adjoint optimization of the waveguide mode converter.
 
     Args:
-      input_flux: array of DFT fields from normalization run.
+      input_flux: 1darray of DFT fields from normalization run.
       input_flux_data: DFT fields object returned by `get_flux_data`.
 
     Returns:
-      An `meep.adjoint.OptimizationProblem` class object.
+      A `meep.adjoint.OptimizationProblem` class object.
     """
-    matgrid = mp.MaterialGrid(mp.Vector3(Nx,Ny,0),
-                              SiO2,
-                              Si,
-                              weights=np.ones((Nx,Ny)))
+    matgrid = mp.MaterialGrid(
+        mp.Vector3(Nx,Ny,0),
+        SiO2,
+        Si,
+        weights=np.ones((Nx,Ny)),
+    )
 
     matgrid_region = mpa.DesignRegion(
         matgrid,
-        volume=mp.Volume(center=mp.Vector3(),
-                         size=mp.Vector3(
-                             design_region_size.x,
-                             design_region_size.y,
-                             mp.inf
-                         ),
-                         )
+        volume=mp.Volume(
+            center=mp.Vector3(),
+            size=mp.Vector3(
+                design_region_size.x,
+                design_region_size.y,
+                mp.inf
+            ),
+        )
     )
 
-    matgrid_geometry = [mp.Block(center=matgrid_region.center,
-                                 size=matgrid_region.size,
-                                 material=matgrid)]
+    matgrid_geometry = [
+        mp.Block(
+            center=matgrid_region.center,
+            size=matgrid_region.size,
+            material=matgrid,
+        )
+    ]
 
-    geometry = [mp.Block(size=mp.Vector3(mp.inf,w,mp.inf),
-                         center=mp.Vector3(),
-                         material=Si)]
+    geometry = [
+        mp.Block(
+            size=mp.Vector3(mp.inf,w,mp.inf),
+            center=mp.Vector3(),
+            material=Si
+        )
+    ]
 
     geometry += matgrid_geometry
 
-    sources = [mp.EigenModeSource(src=mp.GaussianSource(fcen,fwidth=df),
-                                  size=mp.Vector3(0,sy,0),
-                                  center=src_pt,
-                                  eig_band=1,
-                                  eig_parity=eig_parity)]
+    sources = [
+        mp.EigenModeSource(
+            src=mp.GaussianSource(fcen,fwidth=df),
+            size=mp.Vector3(0,sy,0),
+            center=src_pt,
+            eig_band=1,
+            eig_parity=eig_parity),
+    ]
 
-    sim = mp.Simulation(resolution=resolution,
-                        default_material=SiO2,
-                        cell_size=cell_size,
-                        sources=sources,
-                        geometry=geometry,
-                        boundary_layers=pml_layers,
-                        k_point=mp.Vector3())
+    sim = mp.Simulation(
+        resolution=resolution,
+        default_material=SiO2,
+        cell_size=cell_size,
+        sources=sources,
+        geometry=geometry,
+        boundary_layers=pml_layers,
+        k_point=mp.Vector3(),
+    )
 
     obj_list = [
         mpa.EigenmodeCoefficient(
