@@ -1,6 +1,6 @@
 # Topology optimization of the waveguide mode converter using Meep's adjoint
 # solver. The optimization involves minimizing the worst case of R + (1-T)
-# where R is $|S_{11}^2|$ for mode 1 and T is $|S_{21}^2|$ for mode 2
+# where R is $|S_{11}|^2$ for mode 1 and T is $|S_{21}|^2$ for mode 2
 # across six different wavelengths. The minimum linewidth criteria is 90 nm.
 # The optimization uses the method of moving asymptotes (MMA) algorithm
 # from NLopt.
@@ -347,14 +347,14 @@ if __name__ == '__main__':
         )
 
         # save the final design as a 2d array in CSV format
-        filtered_design_params = mapping(
+        final_design_weights = mapping(
             x[1:],
             eta_i,
             cur_beta/beta_scale
         ).reshape(Nx,Ny)
         np.savetxt(
             'optimal_design.csv',
-            weights,
+            final_design_weights,
             fmt='%4.2f',
             delimiter=','
         )
