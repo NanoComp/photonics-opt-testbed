@@ -110,8 +110,8 @@ def f(x, grad):
 
     Args:
       x: 1d array of size 1+Nx*Ny containing epigraph variable (first element)
-         and design weights.
-      grad: gradient as 1d array of size 1+Nx*Ny.
+         and design weights (remaining elements).
+      grad: the gradient as 1d array of size 1+Nx*Ny.
     """
     t = x[0]  # epigraph variable
     v = x[1:] # design weights
@@ -126,8 +126,9 @@ def c(result, x, gradient, eta, beta):
 
        Args:
          x: 1d array of size 1+Nx*Ny containing epigraph variable (first
-            element) and design weights.
-         gradient: Jacobian matrix with dimensions (1+Nx*Ny, num. wavelengths).
+            element) and design weights (remaining elements).
+         gradient: the Jacobian matrix with dimensions (1+Nx*Ny,
+                   num. wavelengths).
          eta: erosion/dilation parameter for projection.
          beta: bias parameter for projection.
     """
@@ -293,7 +294,7 @@ def converter_optimization(input_flux, input_flux_data):
             1,
             forward=False,
             eig_parity=eig_parity,
-            norm_dft_fields=input_flux_data,
+            subtracted_dft_fields=input_flux_data,
         ),
         mpa.EigenmodeCoefficient(
             sim,
@@ -334,11 +335,11 @@ if __name__ == '__main__':
     # initial guess for design parameters
     x = np.ones((n,)) * 0.5
 
-    # lower and upper bounds design weights
+    # lower and upper bounds for design weights
     lb = np.zeros((n,))
     ub = np.ones((n,))
 
-    # insert epigraph parameter variable and bounds
+    # insert epigraph variable and bounds as first element of 1d arrays
     x = np.insert(x, 0, 1.2)  # initial guess for the worst error (max: 2.0)
     lb = np.insert(lb, 0, 0)  # lower bound: cannot be less than 0
     ub = np.insert(ub, 0, 2)  # upper bound: cannot be more than 2
@@ -364,11 +365,17 @@ if __name__ == '__main__':
         x[:] = solver.optimize(x)
         cur_beta = cur_beta * beta_scale
 
+    optimal_design_weights = mapping(
+            x[1:],
+            eta_i,
+            cur_beta/beta_scale
+        ).reshape(Nx,Ny)
+
     if mp.am_master():
-        # save a bitmap image of the final design
+        # save a bitmap image of the optimal design
         plt.figure()
         plt.imshow(
-            mapping(x[1:],eta_i,cur_beta/beta_scale).reshape(Nx,Ny),
+            optimal_design_weights,
             cmap='binary',
             interpolation='spline36',
         )
@@ -379,15 +386,10 @@ if __name__ == '__main__':
             bbox_inches='tight',
         )
 
-        # save the final design as a 2d array in CSV format
-        final_design_weights = mapping(
-            x[1:],
-            eta_i,
-            cur_beta/beta_scale
-        ).reshape(Nx,Ny)
+        # save the optimal design as a 2d array in CSV format
         np.savetxt(
             'optimal_design.csv',
-            final_design_weights,
+            optimal_design_weights,
             fmt='%4.2f',
             delimiter=','
         )
@@ -406,7 +408,6 @@ if __name__ == '__main__':
                 beta=cur_beta/beta_scale,
                 evaluation_history=evaluation_history,
                 t=x[0],
-                design_params=x[1:],
-                filtered_design_params=filtered_design_params
+                unmapped_design_weights=x[1:],
             )
 
