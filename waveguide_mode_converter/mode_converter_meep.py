@@ -139,21 +139,21 @@ def mode_converter(design_fname: str):
     tran = np.abs(coeffs[0,:,0])**2 / input_flux
     tran_flux = np.array(mp.get_fluxes(tran_mon))
 
-    sparam_to_dB = lambda s: 20 * np.log10(s)
+    sparam2_to_dB = lambda s: 10 * np.log10(s)
 
     for idx,wvl in enumerate(wvls):
         print("refl:, {:.3f}, {:.6f}, {:.6f}".format(wvl,
                                                      refl[idx],
-                                                     sparam_to_dB(refl[idx])))
+                                                     sparam2_to_dB(refl[idx])))
 
-    print("worst-case reflectance (dB):, {:.6f}".format(sparam_to_dB(np.amax(refl))))
+    print("worst-case reflectance (dB):, {:.6f}".format(sparam2_to_dB(np.amax(refl))))
 
     for idx,wvl in enumerate(wvls):
         print("tran:, {:.3f}, {:.6f}, {:.6f}".format(wvl,
                                                      tran[idx],
-                                                     sparam_to_dB(tran[idx])))
+                                                     sparam2_to_dB(tran[idx])))
 
-    print("worst-case transmittance (dB):, {:.6f}".format(sparam_to_dB(np.amin(tran))))
+    print("worst-case transmittance (dB):, {:.6f}".format(sparam2_to_dB(np.amin(tran))))
 
     # compute the total reflectance (R) and transmittance (T) and their sum
     # the scattered power is thus 1-R-T
