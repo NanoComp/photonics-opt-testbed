@@ -3,17 +3,19 @@
    Vol. 30, pp. 4467-4491 (2022). doi.org/10.1364/OE.442074
 
 The worst-case optimization is based on minimizing the maximum
-of R + (1-T) where R is $|S_{11}|^2$ for mode 1 and T is $|S_{21}|^2$
-for mode 2 across six different wavelengths. The minimum linewidth
-criteria is 90 nm. The optimization uses the method of moving
-asymptotes (MMA) algorithm from NLopt.
+of R + (1-T) where R (reflectance) is $|S_{11}|^2$ for mode 1
+and T (transmittance) is $|S_{21}|^2$ for mode 2 across six
+different wavelengths. The optimization uses the method of moving
+asymptotes (MMA) algorithm from NLopt. The minimum linewidth
+constraint is based on A.M. Hammond et al., Optics Express,
+Vol. 29, pp. 23916-23938, (2021). doi.org/10.1364/OE.431188
 """
 
 import numpy as np
 import matplotlib
 matplotlib.use('agg')
 import matplotlib.pyplot as plt
-from autograd import numpy as npa, tensor_jacobian_product
+from autograd import numpy as npa, tensor_jacobian_product, grad
 import nlopt
 import meep as mp
 import meep.adjoint as mpa
@@ -37,13 +39,14 @@ pml_layers = [mp.PML(thickness=dpml)]
 wvls = (1.265, 1.270, 1.275, 1.285, 1.290, 1.295)
 frqs = [1/wvl for wvl in wvls]
 
-minimum_length = 0.09  # minimum length scale (μm)
+minimum_length = 0.05  # minimum length scale (μm)
 eta_i = (
     0.5 # blueprint design field thresholding point (between 0 and 1)
 )
-eta_e = 0.55       # erosion design field thresholding point (between 0 and 1)
+eta_e = 0.75       # erosion design field thresholding point (between 0 and 1)
 eta_d = 1 - eta_e  # dilation design field thresholding point (between 0 and 1)
 filter_radius = mpa.get_conic_radius_from_eta_e(minimum_length, eta_e)
+print(f"filter_radius:, {filter_radius:.6f}")
 
 # pulsed source center frequency and bandwidth
 wvl_min = 1.26
@@ -66,6 +69,40 @@ design_region_resolution = int(2*resolution)
 Nx = int(design_region_size.x*design_region_resolution)
 Ny = int(design_region_size.y*design_region_resolution)
 
+# impose a 1-pixel thick bit "mask" around the edges
+# of the design region in order to prevent violations
+# of the mininum linewidth constraint.
+
+x_g = np.linspace(
+    -design_region_size.x / 2,
+    design_region_size.x / 2,
+    Nx,
+)
+y_g = np.linspace(
+    -design_region_size.y / 2,
+    design_region_size.y / 2,
+    Ny,
+)
+X_g, Y_g = np.meshgrid(
+    x_g,
+    y_g,
+    sparse=True,
+    indexing="ij",
+)
+
+left_wg_mask = (X_g == -design_region_size.x / 2) & (np.abs(Y_g) <= w / 2)
+right_wg_mask = (X_g == design_region_size.x / 2) & (np.abs(Y_g) <= w / 2)
+Si_mask = left_wg_mask | right_wg_mask
+
+border_mask = (
+    (X_g == -design_region_size.x / 2) |
+    (X_g == design_region_size.x / 2) |
+    (Y_g == -design_region_size.y / 2) |
+    (Y_g == design_region_size.y / 2)
+)
+SiO2_mask = border_mask.copy()
+SiO2_mask[Si_mask] = False
+
 refl_pt = mp.Vector3(-0.5*sx+dpml+0.5*l)
 tran_pt = mp.Vector3(0.5*sx-dpml-0.5*l)
 
@@ -74,7 +111,7 @@ stop_cond = mp.stop_when_fields_decayed(50, mp.Ez, refl_pt, 1e-8)
 def mapping(x, eta, beta):
     """A differentiable mapping function which applies, in order,
        the following sequence of transformations to the design weights:
-       (1) mirror symmetry along the $x$ axis, (2) convolution with a
+       (1) a bit mask for the edge pixels, (2) convolution with a
        conic filter, and (3) projection via a hyperbolic tangent.
 
     Args:
@@ -82,14 +119,18 @@ def mapping(x, eta, beta):
       eta: erosion/dilation parameter for the projection.
       beta: bias parameter for the projection.
     """
-    mirrored_field = x.reshape(Nx,Ny)
-    mirrored_field = (
-        npa.flipud(mirrored_field) + mirrored_field
-    ) / 2
-    mirrored_field = mirrored_field.flatten()
+    x = npa.where(
+        Si_mask.flatten(),
+        1,
+        npa.where(
+            SiO2_mask.flatten(),
+            0,
+            x
+        )
+    )
 
     filtered_field = mpa.conic_filter(
-        mirrored_field,
+        x,
         filter_radius,
         design_region_size.x,
         design_region_size.y,
@@ -125,6 +166,7 @@ def c(result, x, gradient, eta, beta):
     """Constraint function for the epigraph formulation.
 
        Args:
+         result: the result of the function evaluation modified in place.
          x: 1d array of size 1+Nx*Ny containing epigraph variable (first
             element) and design weights (remaining elements).
          gradient: the Jacobian matrix with dimensions (1+Nx*Ny,
@@ -158,6 +200,46 @@ def c(result, x, gradient, eta, beta):
     evaluation_history.append(np.real(f0))
 
     cur_iter[0] = cur_iter[0] + 1
+
+
+def glc(result, x, gradient, beta):
+    """Constraint function for the minimum linewidth.
+
+       Args:
+         result: the result of the function evaluation modified in place.
+         x: 1d array of size 1+Nx*Ny containing epigraph variable (first
+            element) and design weights (remaining elements).
+         gradient: the Jacobian matrix with dimensions (1+Nx*Ny,
+                   num. wavelengths).
+         beta: bias parameter for projection.
+    """
+    t = x[0]  # dummy parameter
+    v = x[1:] # design parameters
+    a1 = 1e-4 # hyper parameter (primary)
+    b1 = 0    # hyper parameter (secondary)
+    gradient[:,0] = -a1
+
+    filter_f = lambda a: mpa.conic_filter(
+        a.reshape(Nx,Ny),
+        filter_radius,
+        design_region_size.x,
+        design_region_size.y,
+        design_region_resolution,
+    )
+    threshold_f = lambda a: mpa.tanh_projection(a,beta,0.5)
+    c0 = (filter_radius*1/resolution)**4
+
+    M1 = lambda a: mpa.constraint_solid(a,c0,eta_e,filter_f,threshold_f,1)
+    M2 = lambda a: mpa.constraint_void(a,c0,eta_d,filter_f,threshold_f,1)
+
+    g1 = grad(M1)(v)
+    g2 = grad(M2)(v)
+
+    result[0] = M1(v) - a1*t - b1
+    result[1] = M2(v) - a1*t - b1
+
+    gradient[0,1:] = g1.flatten()
+    gradient[1,1:] = g2.flatten()
 
 
 def straight_waveguide():
@@ -334,80 +416,88 @@ if __name__ == '__main__':
 
     # initial guess for design parameters
     x = np.ones((n,)) * 0.5
+    x[Si_mask.flatten()] = 1    # set the edges of waveguides to silicon
+    x[SiO2_mask.flatten()] = 0  # set the other edges to SiO2
 
     # lower and upper bounds for design weights
     lb = np.zeros((n,))
+    lb[Si_mask.flatten()] = 1
     ub = np.ones((n,))
+    ub[SiO2_mask.flatten()] = 0
 
     # insert epigraph variable and bounds as first element of 1d arrays
-    x = np.insert(x, 0, 1.2)  # initial guess for the worst error (max: 2.0)
-    lb = np.insert(lb, 0, 0)  # lower bound: cannot be less than 0
-    ub = np.insert(ub, 0, 2)  # upper bound: cannot be more than 2
+    x = np.insert(x, 0, 1.2)   # initial guess for the worst error
+    lb = np.insert(lb, 0, 0.)  # lower bound: cannot be less than 0.
+    ub = np.insert(ub, 0, 2.)  # upper bound: cannot be more than 2.
 
     evaluation_history = []
     cur_iter = [0]
 
-    cur_beta = 4
-    beta_scale = 2
-    num_betas = 8
-    max_eval = 12
+    betas = [8, 16, 32]
+    max_eval = 80
     tol = np.array([1e-6] * opt.nf)
-    for iters in range(num_betas):
+    for beta in betas:
         solver = nlopt.opt(algorithm, n + 1)
         solver.set_lower_bounds(lb)
         solver.set_upper_bounds(ub)
         solver.set_min_objective(f)
         solver.set_maxeval(max_eval)
         solver.add_inequality_mconstraint(
-            lambda r, x, g: c(r, x, g, eta_i, cur_beta),
+            lambda r, x, g: c(r, x, g, eta_i, beta),
             tol,
         )
+        # apply the minimum linewidth constraint
+        # only in the final "epoch"
+        if beta == betas[-1]:
+            solver.add_inequality_mconstraint(
+                lambda r, x, g: glc(r, x, g, beta),
+                [1e-8] * opt.nf,
+            )
         x[:] = solver.optimize(x)
-        cur_beta = cur_beta * beta_scale
 
-    optimal_design_weights = mapping(
+        optimal_design_weights = mapping(
             x[1:],
             eta_i,
-            cur_beta/beta_scale
+            beta,
         ).reshape(Nx,Ny)
 
-    if mp.am_master():
-        # save a bitmap image of the optimal design
-        plt.figure()
-        plt.imshow(
-            optimal_design_weights,
-            cmap='binary',
-            interpolation='spline36',
-        )
-        plt.axis('off')
-        plt.savefig(
-            'optimal_design.png',
-            dpi=150,
-            bbox_inches='tight',
-        )
-
-        # save the optimal design as a 2d array in CSV format
-        np.savetxt(
-            'optimal_design.csv',
-            optimal_design_weights,
-            fmt='%4.2f',
-            delimiter=','
-        )
-
-        # save all the important optimization parameters and data
-        with open("optimal_design.npz","wb") as fl:
-            np.savez(
-                fl,
-                Nx=Nx,
-                Ny=Ny,
-                design_region_size=(dx,dy),
-                design_region_resolution=design_region_resolution,
-                beta_scale=beta_scale,
-                num_betas=num_betas,
-                max_eval=max_eval,
-                beta=cur_beta/beta_scale,
-                evaluation_history=evaluation_history,
-                t=x[0],
-                unmapped_design_weights=x[1:],
+        if mp.am_master():
+            # save a bitmap image of the design at the end of each epoch
+            plt.figure()
+            plt.imshow(
+                optimal_design_weights,
+                cmap='binary',
+                interpolation='none',
             )
+            plt.axis('off')
+            plt.savefig(
+                f'optimal_design_beta{beta}.png',
+                dpi=150,
+                bbox_inches='tight',
+            )
+
+    # save the optimal design as a 2d array in CSV format
+    np.savetxt(
+        'optimal_design.csv',
+        optimal_design_weights,
+        fmt='%4.2f',
+        delimiter=','
+    )
+
+    # save all the important optimization parameters and data
+    with open("optimal_design.npz","wb") as fl:
+        np.savez(
+            fl,
+            Nx=Nx,
+            Ny=Ny,
+            design_region_size=(dx,dy),
+            design_region_resolution=design_region_resolution,
+            betas=betas,
+            max_eval=max_eval,
+            evaluation_history=evaluation_history,
+            t=x[0],
+            unmapped_design_weights=x[1:],
+            minimum_length=minimum_length,
+            optimal_design_weights=optimal_design_weights,
+        )
 
