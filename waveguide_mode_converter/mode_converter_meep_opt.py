@@ -1,5 +1,5 @@
 """Topology optimization of the waveguide mode converter using
-   Meep's adjoint solver from A M. Hammond et al., Optics Express,
+   Meep's adjoint solver from A.M. Hammond et al., Optics Express,
    Vol. 30, pp. 4467-4491 (2022). doi.org/10.1364/OE.442074
 
 The worst-case optimization is based on minimizing the maximum
@@ -71,7 +71,7 @@ Ny = int(design_region_size.y*design_region_resolution)
 
 # impose a 1-pixel thick bit "mask" around the edges
 # of the design region in order to prevent violations
-# of the mininum linewidth constraint.
+# of the minimum linewidth constraint.
 
 x_g = np.linspace(
     -design_region_size.x / 2,
@@ -111,7 +111,7 @@ stop_cond = mp.stop_when_fields_decayed(50, mp.Ez, refl_pt, 1e-8)
 def mapping(x, eta, beta):
     """A differentiable mapping function which applies, in order,
        the following sequence of transformations to the design weights:
-       (1) a bit mask for the edge pixels, (2) convolution with a
+       (1) a bit mask for the boundary pixels, (2) convolution with a
        conic filter, and (3) projection via a hyperbolic tangent.
 
     Args:
@@ -152,7 +152,7 @@ def f(x, grad):
     Args:
       x: 1d array of size 1+Nx*Ny containing epigraph variable (first element)
          and design weights (remaining elements).
-      grad: the gradient as 1d array of size 1+Nx*Ny.
+      grad: the gradient as a 1d array of size 1+Nx*Ny modified in place.
     """
     t = x[0]  # epigraph variable
     v = x[1:] # design weights
@@ -170,11 +170,11 @@ def c(result, x, gradient, eta, beta):
          x: 1d array of size 1+Nx*Ny containing epigraph variable (first
             element) and design weights (remaining elements).
          gradient: the Jacobian matrix with dimensions (1+Nx*Ny,
-                   num. wavelengths).
+                   num. wavelengths) modified in place.
          eta: erosion/dilation parameter for projection.
          beta: bias parameter for projection.
     """
-    print(f"iteration: {cur_iter[0]}, eta: {eta}, beta: {beta}")
+    print(f"iteration:, {cur_iter[0]:3d}, eta: {eta}, beta: {beta:2d}, t: {x[0]}")
 
     t = x[0]  # epigraph variable
     v = x[1:] # design weights
@@ -197,7 +197,8 @@ def c(result, x, gradient, eta, beta):
 
     result[:] = np.real(f0) - t
 
-    evaluation_history.append(np.real(f0))
+    objfunc_history.append(np.real(f0))
+    epivar_history.append(t)
 
     cur_iter[0] = cur_iter[0] + 1
 
@@ -210,7 +211,7 @@ def glc(result, x, gradient, beta):
          x: 1d array of size 1+Nx*Ny containing epigraph variable (first
             element) and design weights (remaining elements).
          gradient: the Jacobian matrix with dimensions (1+Nx*Ny,
-                   num. wavelengths).
+                   num. wavelengths) modified in place.
          beta: bias parameter for projection.
     """
     t = x[0]  # dummy parameter
@@ -226,7 +227,7 @@ def glc(result, x, gradient, beta):
         design_region_size.y,
         design_region_resolution,
     )
-    threshold_f = lambda a: mpa.tanh_projection(a,beta,0.5)
+    threshold_f = lambda a: mpa.tanh_projection(a,beta,eta_i)
     c0 = (filter_radius*1/resolution)**4
 
     M1 = lambda a: mpa.constraint_solid(a,c0,eta_e,filter_f,threshold_f,1)
@@ -300,7 +301,7 @@ def straight_waveguide():
     return input_flux, input_flux_data
 
 
-def converter_optimization(input_flux, input_flux_data):
+def mode_converter_optimization(input_flux, input_flux_data):
     """Sets up the adjoint optimization of the waveguide mode converter.
 
     Args:
@@ -315,6 +316,7 @@ def converter_optimization(input_flux, input_flux_data):
         SiO2,
         Si,
         weights=np.ones((Nx,Ny)),
+        do_averaging=False,
     )
 
     matgrid_region = mpa.DesignRegion(
@@ -407,7 +409,7 @@ def converter_optimization(input_flux, input_flux_data):
 if __name__ == '__main__':
     input_flux, input_flux_data = straight_waveguide()
 
-    opt = converter_optimization(input_flux, input_flux_data)
+    opt = mode_converter_optimization(input_flux, input_flux_data)
 
     algorithm = nlopt.LD_MMA
 
@@ -416,26 +418,28 @@ if __name__ == '__main__':
 
     # initial guess for design parameters
     x = np.ones((n,)) * 0.5
-    x[Si_mask.flatten()] = 1    # set the edges of waveguides to silicon
-    x[SiO2_mask.flatten()] = 0  # set the other edges to SiO2
+    x[Si_mask.flatten()] = 1.    # set the edges of waveguides to silicon
+    x[SiO2_mask.flatten()] = 0.  # set the other edges to SiO2
 
     # lower and upper bounds for design weights
     lb = np.zeros((n,))
-    lb[Si_mask.flatten()] = 1
+    lb[Si_mask.flatten()] = 1.
     ub = np.ones((n,))
-    ub[SiO2_mask.flatten()] = 0
+    ub[SiO2_mask.flatten()] = 0.
 
-    # insert epigraph variable and bounds as first element of 1d arrays
-    x = np.insert(x, 0, 1.2)   # initial guess for the worst error
-    lb = np.insert(lb, 0, 0.)  # lower bound: cannot be less than 0.
-    ub = np.insert(ub, 0, 2.)  # upper bound: cannot be more than 2.
+    # insert epigraph variable and no bounds as first element of design arrays
+    x = np.insert(x, 0, 1.2)   # initial guess for the worst error (ignored)
+    lb = np.insert(lb, 0, -np.inf)
+    ub = np.insert(ub, 0, +np.inf)
 
-    evaluation_history = []
+    objfunc_history = []
+    epivar_history = []
     cur_iter = [0]
 
     betas = [8, 16, 32]
-    max_eval = 80
-    tol = np.array([1e-6] * opt.nf)
+    max_eval = 50
+    tol_epi = np.array([1e-8] * opt.nf)
+    tol_lw = np.array([1e-8] * opt.nf)
     for beta in betas:
         solver = nlopt.opt(algorithm, n + 1)
         solver.set_lower_bounds(lb)
@@ -444,15 +448,27 @@ if __name__ == '__main__':
         solver.set_maxeval(max_eval)
         solver.add_inequality_mconstraint(
             lambda r, x, g: c(r, x, g, eta_i, beta),
-            tol,
+            tol_epi,
         )
         # apply the minimum linewidth constraint
         # only in the final "epoch"
         if beta == betas[-1]:
             solver.add_inequality_mconstraint(
                 lambda r, x, g: glc(r, x, g, beta),
-                [1e-8] * opt.nf,
+                tol_lw,
             )
+
+        # execute a single forward run before the start of each
+        # epoch and manually set the initial epigraph variable to
+        # slightly larger than the largest value of the objective
+        # function over the six wavelengths.
+        t0 = opt(
+            [mapping(x[1:], eta_i, beta)],
+            need_gradient=False,
+        )
+        x[0] = np.amax(t0[0]) + 0.1
+        print(f"data:, {beta}, {t0[0]}, {x[0]}")
+
         x[:] = solver.optimize(x)
 
         optimal_design_weights = mapping(
@@ -494,7 +510,8 @@ if __name__ == '__main__':
             design_region_resolution=design_region_resolution,
             betas=betas,
             max_eval=max_eval,
-            evaluation_history=evaluation_history,
+            objfunc_history=objfunc_history,
+            epivar_history=epivar_history,
             t=x[0],
             unmapped_design_weights=x[1:],
             minimum_length=minimum_length,
