@@ -32,7 +32,7 @@ def minimum_length(arr,phys_size,margin_size=np.zeros((3,2)),threshold=0.5,proj_
             diff_image = abs(open_operator(arr,radius,phys_size,proj_strength)-close_operator(arr,radius,phys_size,proj_strength))
 
             # number of interior pixels
-            pixel_in = in_pixel_count(diff_image,margin_number,dims,threshold)
+            pixel_in = interior_pixel_count(diff_image,margin_number,dims,threshold)
 
             if pixel_in>0:
                 return radius*2
@@ -43,14 +43,14 @@ def minimum_length(arr,phys_size,margin_size=np.zeros((3,2)),threshold=0.5,proj_
     else: # find the minimum length scale via binary search if "len_arr" is not provided
         radius_ub = min(phys_size)/2 # maximum meaningful filter radius
         diff_image_ub = abs(open_operator(arr,radius_ub,phys_size,proj_strength)-close_operator(arr,radius_ub,phys_size,proj_strength))
-        pixel_in_ub = in_pixel_count(diff_image_ub,margin_number,dims,threshold) 
+        pixel_in_ub = interior_pixel_count(diff_image_ub,margin_number,dims,threshold) 
 
         if pixel_in_ub>0:
             radii = [0,radius_ub/2,radius_ub]
             while abs(radii[0]-radii[2])>min(pixel_size(arr,phys_size))/2:
                 radius = radii[1]
                 diff_image = abs(open_operator(arr,radius,phys_size,proj_strength)-close_operator(arr,radius,phys_size,proj_strength))
-                pixel_in = in_pixel_count(diff_image,margin_number,dims,threshold)
+                pixel_in = interior_pixel_count(diff_image,margin_number,dims,threshold)
 
                 if pixel_in==0: radii[0],radii[1] = radius,(radius+radii[2])/2 # radius is too small
                 else: radii[1],radii[2] = (radius+radii[0])/2,radius # radius is still large
@@ -64,14 +64,14 @@ def minimum_length(arr,phys_size,margin_size=np.zeros((3,2)),threshold=0.5,proj_
                 radius_initial /= 1.5
                 diff_image_initial = \
                 abs(open_operator(arr,radius_initial,phys_size,proj_strength)-close_operator(arr,radius_initial,phys_size,proj_strength))
-                pixel_in_initial = in_pixel_count(diff_image_initial,margin_number,dims,threshold)
+                pixel_in_initial = interior_pixel_count(diff_image_initial,margin_number,dims,threshold)
 
             if pixel_in_initial>0: # start the binary search
                 radii = [0,radius_initial/2,radius_initial]
                 while abs(radii[0]-radii[2])>min(pixel_size(arr,phys_size))/2:
                     radius = radii[1]
                     diff_image = abs(open_operator(arr,radius,phys_size,proj_strength)-close_operator(arr,radius,phys_size,proj_strength))
-                    pixel_in = in_pixel_count(diff_image,margin_number,dims,threshold)
+                    pixel_in = interior_pixel_count(diff_image,margin_number,dims,threshold)
                     if pixel_in==0: radii[0],radii[1] = radius,(radius+radii[2])/2
                     else: radii[1],radii[2] = (radius+radii[0])/2,radius
                 return radii[2]*2
@@ -227,24 +227,31 @@ def center(arr, newshape):
     myslice = [slice(startind[k], endind[k]) for k in range(len(endind))]
     return arr[tuple(myslice)]
 
-def in_pixel_count(arr,margin_number=np.ones((2,2),dtype=int),dims=2,threshold=0.5):
+def interior_pixel_count(arr,margin_number=np.ones((2,2),dtype=int),dims=2,threshold=0.5):
     # return the number of interior pixels with nonzero values
 
     pixel_int = 0 # initialize before counting
     arr = np.squeeze(arr)
+    arr = (np.sign(arr-threshold)+1)*0.5
+    row_begin, row_end = margin_number[0,0], arr.shape[0]-margin_number[0,1]
+    column_begin,column_end = margin_number[1,0], arr.shape[1]-margin_number[1,1]
 
     if dims==2:
-        for ii in range(margin_number[0,0],arr.shape[0]-margin_number[0,1]):
-            for jj in range(margin_number[1,0],arr.shape[1]-margin_number[1,1]):
-                if (arr[adjacency([ii,jj])]>threshold).all(): # regard the value of a pixel as nonzero if it exceeds the threshold
-                    pixel_int += 1
+        selector = arr[row_begin:row_end,column_begin:column_end] * \
+                   arr[row_begin-1:row_end-1,column_begin:column_end] * arr[row_begin+1:row_end+1,column_begin:column_end] * \
+                   arr[row_begin:row_end,column_begin-1:column_end-1] * arr[row_begin:row_end,column_begin+1:column_end+1]
+
     elif dims==3:
-        for ii in range(margin_number[0,0],arr.shape[0]-margin_number[0,1]):
-            for jj in range(margin_number[1,0],arr.shape[1]-margin_number[1,1]):
-                for kk in range(margin_number[2,0],arr.shape[2]-margin_number[2,1]):
-                    if (arr[adjacency([ii,jj,kk])]>threshold).all():
-                        pixel_int += 1
+        page_begin, page_end = margin_number[2,0], arr.shape[2]-margin_number[2,1]
+        selector = arr[row_begin:row_end,column_begin:column_end,page_begin:page_end] * \
+                   arr[row_begin-1:row_end-1,column_begin:column_end,page_begin:page_end] * \
+                   arr[row_begin+1:row_end+1,column_begin:column_end,page_begin:page_end] * \
+                   arr[row_begin:row_end,column_begin-1:column_end-1,page_begin:page_end] * \
+                   arr[row_begin:row_end,column_begin+1:column_end+1,page_begin:page_end] * \
+                   arr[row_begin:row_end,column_begin:column_end,page_begin-1:page_end-1] * \
+                   arr[row_begin:row_end,column_begin:column_end,page_begin+1:page_end+1]
+
     else:
         raise AssertionError("Function for this dimension is not implemented!")
 
-    return pixel_int
+    return np.sum(selector)
