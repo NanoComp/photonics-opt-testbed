@@ -8,8 +8,9 @@ This method is outlined as follows.
 4. Repeat Steps 2 and 3 for a series of probe diameters, and seek the minimum diameter at which an interior solid pixel emerges. This diameter is considered as the minimum length scale.
 ![classification of pixels](pixel_classification.png)
 
-Implementation details affect results, which are usually slightly different from declared minimum length scales that are imposed on designing. Generally, the error of the minimum length scale estimated by this method is at most the size of several pixels. If the minimum length scale is much larger than the pixel size, the error would be relatively small. A few examples are as follows [3].
+Implementation details affect results, which are usually slightly different from declared minimum length scales that are imposed on designing. Generally, the error of the minimum length scale estimated by this method is at most the size of several pixels. If the minimum length scale is much larger than the pixel size, the error would be relatively small. Some examples are as follows [3].
 ![examples of design patterns](design_patterns.png)
+
 
 References  
 [1] Linus Hägg and Eddie Wadbro, On minimum length scale control in density based topology optimization, Struct. Multidisc Optim. 58(3), 1015–1032 (2018).  
