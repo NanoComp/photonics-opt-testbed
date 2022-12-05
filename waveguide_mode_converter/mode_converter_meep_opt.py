@@ -316,7 +316,8 @@ def mode_converter_optimization(input_flux, input_flux_data):
         SiO2,
         Si,
         weights=np.ones((Nx,Ny)),
-        do_averaging=False,
+        do_averaging=True,
+        damping=0.1*2*np.pi*fcen,
     )
 
     matgrid_region = mpa.DesignRegion(
@@ -401,6 +402,7 @@ def mode_converter_optimization(input_flux, input_flux_data):
         objective_arguments=obj_list,
         design_regions=[matgrid_region],
         frequencies=frqs,
+        decay_by=1e-12,
     )
 
     return opt
@@ -436,11 +438,11 @@ if __name__ == '__main__':
     epivar_history = []
     cur_iter = [0]
 
-    betas = [8, 16, 32]
-    max_eval = 50
-    tol_epi = np.array([1e-8] * opt.nf)
-    tol_lw = np.array([1e-8] * opt.nf)
-    for beta in betas:
+    betas = [8, 16, 32, 64, 128, 256]
+    max_evals = [50, 50, 50, 50, 100, 100]
+    tol_epi = np.array([1e-3] * opt.nf)
+    tol_lw = np.array([1e-3] * 2)
+    for beta, max_eval in zip(betas, max_evals):
         solver = nlopt.opt(algorithm, n + 1)
         solver.set_lower_bounds(lb)
         solver.set_upper_bounds(ub)
@@ -451,7 +453,8 @@ if __name__ == '__main__':
             tol_epi,
         )
         # apply the minimum linewidth constraint
-        # only in the final "epoch"
+        # only in the final "epoch" to an initial
+        # binary design from the previous epoch
         if beta == betas[-1]:
             solver.add_inequality_mconstraint(
                 lambda r, x, g: glc(r, x, g, beta),
