@@ -49,7 +49,7 @@ The script will print out CSV-formatted performance metrics. For example,
 -30.67, -0.26
 ```
 
-For comparison, the following are the reflectance and transmittance spectra for the topology optimized designs using Meep.
+For comparison, the following are the reflectance and transmittance spectra for the topology-optimized designs using Meep with various minimum lengthscales.
 
 1. Minimum lengthscale constraint: 50 nm.
 

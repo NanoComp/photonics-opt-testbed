@@ -238,7 +238,6 @@ def glc(result, x, gradient, beta):
 
     result[0] = M1(v) - a1*t - b1
     result[1] = M2(v) - a1*t - b1
-    print("glc:, {result[0]}, {result[1]}")
 
     gradient[0,1:] = g1.flatten()
     gradient[1,1:] = g2.flatten()
