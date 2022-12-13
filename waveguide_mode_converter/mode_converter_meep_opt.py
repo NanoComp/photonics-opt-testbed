@@ -90,15 +90,15 @@ X_g, Y_g = np.meshgrid(
     indexing="ij",
 )
 
-left_wg_mask = (X_g == -design_region_size.x / 2) & (np.abs(Y_g) <= w / 2)
-right_wg_mask = (X_g == design_region_size.x / 2) & (np.abs(Y_g) <= w / 2)
+left_wg_mask = (X_g <= -design_region_size.x / 2 + filter_radius) & (np.abs(Y_g) <= w / 2)
+right_wg_mask = (X_g >= design_region_size.x / 2 - filter_radius) & (np.abs(Y_g) <= w / 2)
 Si_mask = left_wg_mask | right_wg_mask
 
 border_mask = (
-    (X_g == -design_region_size.x / 2) |
-    (X_g == design_region_size.x / 2) |
-    (Y_g == -design_region_size.y / 2) |
-    (Y_g == design_region_size.y / 2)
+    (X_g <= -design_region_size.x / 2 + filter_radius) |
+    (X_g >= design_region_size.x / 2 - filter_radius) |
+    (Y_g <= -design_region_size.y / 2 + filter_radius) |
+    (Y_g >= design_region_size.y / 2 - filter_radius)
 )
 SiO2_mask = border_mask.copy()
 SiO2_mask[Si_mask] = False
@@ -216,7 +216,7 @@ def glc(result, x, gradient, beta):
     """
     t = x[0]  # dummy parameter
     v = x[1:] # design parameters
-    a1 = 1e-4 # hyper parameter (primary)
+    a1 = 1e-5 # hyper parameter (primary)
     b1 = 0    # hyper parameter (secondary)
     gradient[:,0] = -a1
 
@@ -228,7 +228,7 @@ def glc(result, x, gradient, beta):
         design_region_resolution,
     )
     threshold_f = lambda a: mpa.tanh_projection(a,beta,eta_i)
-    c0 = (filter_radius*1/resolution)**4
+    c0 = 1e3*(filter_radius*1/resolution)**4
 
     M1 = lambda a: mpa.constraint_solid(a,c0,eta_e,filter_f,threshold_f,1)
     M2 = lambda a: mpa.constraint_void(a,c0,eta_d,filter_f,threshold_f,1)
@@ -238,6 +238,7 @@ def glc(result, x, gradient, beta):
 
     result[0] = M1(v) - a1*t - b1
     result[1] = M2(v) - a1*t - b1
+    print("glc:, {result[0]}, {result[1]}")
 
     gradient[0,1:] = g1.flatten()
     gradient[1,1:] = g2.flatten()
@@ -317,7 +318,7 @@ def mode_converter_optimization(input_flux, input_flux_data):
         Si,
         weights=np.ones((Nx,Ny)),
         do_averaging=True,
-        damping=0.1*2*np.pi*fcen,
+        damping=0.05*2*np.pi*fcen,
     )
 
     matgrid_region = mpa.DesignRegion(
@@ -402,7 +403,6 @@ def mode_converter_optimization(input_flux, input_flux_data):
         objective_arguments=obj_list,
         design_regions=[matgrid_region],
         frequencies=frqs,
-        decay_by=1e-12,
     )
 
     return opt
@@ -439,15 +439,16 @@ if __name__ == '__main__':
     cur_iter = [0]
 
     betas = [8, 16, 32, 64, 128, 256]
-    max_evals = [50, 50, 50, 50, 100, 100]
-    tol_epi = np.array([1e-3] * opt.nf)
-    tol_lw = np.array([1e-3] * 2)
+    max_evals = [80, 100, 120, 130, 150, 100]
+    tol_epi = np.array([1e-4] * opt.nf)
+    tol_lw = np.array([1e-4] * 2)
     for beta, max_eval in zip(betas, max_evals):
         solver = nlopt.opt(algorithm, n + 1)
         solver.set_lower_bounds(lb)
         solver.set_upper_bounds(ub)
         solver.set_min_objective(f)
         solver.set_maxeval(max_eval)
+        solver.set_param("dual_ftol_rel",1e-7)
         solver.add_inequality_mconstraint(
             lambda r, x, g: c(r, x, g, eta_i, beta),
             tol_epi,
