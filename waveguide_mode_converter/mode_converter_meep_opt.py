@@ -3,7 +3,7 @@
    Vol. 30, pp. 4467-4491 (2022). doi.org/10.1364/OE.442074
 
 The worst-case optimization is based on minimizing the maximum
-of R + (1-T) where R (reflectance) is $|S_{11}|^2$ for mode 1
+of {R,1-T} where R (reflectance) is $|S_{11}|^2$ for mode 1
 and T (transmittance) is $|S_{21}|^2$ for mode 2 across six
 different wavelengths. The optimization uses the method of moving
 asymptotes (MMA) algorithm from NLopt. The minimum linewidth
@@ -69,9 +69,9 @@ design_region_resolution = int(2*resolution)
 Nx = int(design_region_size.x*design_region_resolution)
 Ny = int(design_region_size.y*design_region_resolution)
 
-# impose a 1-pixel thick bit "mask" around the edges
-# of the design region in order to prevent violations
-# of the minimum linewidth constraint.
+# impose a bit "mask" of thickness equal to the filter radius
+# around the edges of the design region in order to prevent
+# violations of the minimum linewidth constraint.
 
 x_g = np.linspace(
     -design_region_size.x / 2,
@@ -90,8 +90,14 @@ X_g, Y_g = np.meshgrid(
     indexing="ij",
 )
 
-left_wg_mask = (X_g <= -design_region_size.x / 2 + filter_radius) & (np.abs(Y_g) <= w / 2)
-right_wg_mask = (X_g >= design_region_size.x / 2 - filter_radius) & (np.abs(Y_g) <= w / 2)
+left_wg_mask = (
+    (X_g <= -design_region_size.x / 2 + filter_radius) &
+    (np.abs(Y_g) <= w / 2)
+)
+right_wg_mask = (
+    (X_g >= design_region_size.x / 2 - filter_radius) &
+    (np.abs(Y_g) <= w / 2)
+)
 Si_mask = left_wg_mask | right_wg_mask
 
 border_mask = (
@@ -125,7 +131,7 @@ def mapping(x, eta, beta):
         npa.where(
             SiO2_mask.flatten(),
             0,
-            x
+            x,
         )
     )
 
@@ -170,35 +176,46 @@ def c(result, x, gradient, eta, beta):
          x: 1d array of size 1+Nx*Ny containing epigraph variable (first
             element) and design weights (remaining elements).
          gradient: the Jacobian matrix with dimensions (1+Nx*Ny,
-                   num. wavelengths) modified in place.
+                   2*num. wavelengths) modified in place.
          eta: erosion/dilation parameter for projection.
          beta: bias parameter for projection.
     """
-    print(f"iteration:, {cur_iter[0]:3d}, eta: {eta}, beta: {beta:2d}, t: {x[0]}")
-
     t = x[0]  # epigraph variable
     v = x[1:] # design weights
 
     f0, dJ_du = opt([mapping(v, eta, beta)])
 
+    f0_reflection = f0[0]
+    f0_transmission = f0[1]
+    f0_merged = np.concatenate((f0_reflection, f0_transmission))
+
+    dJ_du_reflection = dJ_du[0]
+    dJ_du_transmission = dJ_du[1]
+    nfrq = len(frqs)
+    my_grad = np.zeros((Nx * Ny, 2 * nfrq))
+    my_grad[:, :nfrq] = dJ_du_reflection
+    my_grad[:, nfrq:] = dJ_du_transmission
+
     # backpropagate the gradients through mapping function
-    my_grad = np.zeros(dJ_du.shape)
-    for k in range(opt.nf):
+    for k in range(2*nfrq):
         my_grad[:, k] = tensor_jacobian_product(mapping, 0)(
             v,
             eta,
             beta,
-            dJ_du[:, k],
+            my_grad[:, k],
         )
 
     if gradient.size > 0:
         gradient[:, 0] = -1  # gradient w.r.t. epigraph variable ("t")
         gradient[:, 1:] = my_grad.T  # gradient w.r.t. each frequency objective
 
-    result[:] = np.real(f0) - t
+    result[:] = np.real(f0_merged) - t
 
-    objfunc_history.append(np.real(f0))
+    objfunc_history.append(np.real(f0_merged))
     epivar_history.append(t)
+
+    print(f"iteration:, {cur_iter[0]:3d}, eta: {eta}, beta: {beta:2d}, "
+          f"t: {t:.5f}, obj. func.: {f0_merged}")
 
     cur_iter[0] = cur_iter[0] + 1
 
@@ -216,7 +233,7 @@ def glc(result, x, gradient, beta):
     """
     t = x[0]  # dummy parameter
     v = x[1:] # design parameters
-    a1 = 1e-5 # hyper parameter (primary)
+    a1 = 1e-3 # hyper parameter (primary)
     b1 = 0    # hyper parameter (secondary)
     gradient[:,0] = -a1
 
@@ -228,7 +245,7 @@ def glc(result, x, gradient, beta):
         design_region_resolution,
     )
     threshold_f = lambda a: mpa.tanh_projection(a,beta,eta_i)
-    c0 = 1e3*(filter_radius*1/resolution)**4
+    c0 = 1e7*(filter_radius*1/resolution)**4
 
     M1 = lambda a: mpa.constraint_solid(a,c0,eta_e,filter_f,threshold_f,1)
     M2 = lambda a: mpa.constraint_void(a,c0,eta_d,filter_f,threshold_f,1)
@@ -241,6 +258,13 @@ def glc(result, x, gradient, beta):
 
     gradient[0,1:] = g1.flatten()
     gradient[1,1:] = g2.flatten()
+
+    t1 = (M1(v) - b1) / a1
+    t2 = (M2(v) - b1) / a1
+
+    print(f"glc:, {result[0]}, {result[1]}, {t1}, {t2}")
+
+    return max(t1, t2)
 
 
 def straight_waveguide():
@@ -301,12 +325,15 @@ def straight_waveguide():
     return input_flux, input_flux_data
 
 
-def mode_converter_optimization(input_flux, input_flux_data):
+def mode_converter_optimization(input_flux, input_flux_data, use_damping,
+                                use_epsavg):
     """Sets up the adjoint optimization of the waveguide mode converter.
 
     Args:
       input_flux: 1darray of DFT fields from normalization run.
       input_flux_data: DFT fields object returned by `get_flux_data`.
+      use_damping: whether to use the damping feature of `MaterialGrid`.
+      use_epsavg: whether to use subpixel smoothing in `MaterialGrid`.
 
     Returns:
       A `meep.adjoint.OptimizationProblem` class object.
@@ -316,8 +343,8 @@ def mode_converter_optimization(input_flux, input_flux_data):
         SiO2,
         Si,
         weights=np.ones((Nx,Ny)),
-        do_averaging=True,
-        damping=0.05*2*np.pi*fcen,
+        do_averaging=True if use_epsavg else False,
+        damping=0.02*2*np.pi*fcen if use_damping else 0,
     )
 
     matgrid_region = mpa.DesignRegion(
@@ -392,13 +419,15 @@ def mode_converter_optimization(input_flux, input_flux_data):
         )
     ]
 
-    def J(refl_mon,tran_mon):
-        return (npa.power(npa.abs(refl_mon), 2) / input_flux) + (
-            1 - npa.power(npa.abs(tran_mon), 2) / input_flux)
+    def J1(refl_mon,tran_mon):
+        return npa.power(npa.abs(refl_mon), 2) / input_flux
+
+    def J2(refl_mon,tran_mon):
+        return 1 - npa.power(npa.abs(tran_mon), 2) / input_flux
 
     opt = mpa.OptimizationProblem(
         simulation=sim,
-        objective_functions=J,
+        objective_functions=[J1, J2],
         objective_arguments=obj_list,
         design_regions=[matgrid_region],
         frequencies=frqs,
@@ -410,14 +439,12 @@ def mode_converter_optimization(input_flux, input_flux_data):
 if __name__ == '__main__':
     input_flux, input_flux_data = straight_waveguide()
 
-    opt = mode_converter_optimization(input_flux, input_flux_data)
-
     algorithm = nlopt.LD_MMA
 
     # number of design parameters
     n = Nx * Ny
 
-    # initial guess for design parameters
+    # initial design parameters
     x = np.ones((n,)) * 0.5
     x[Si_mask.flatten()] = 1.    # set the edges of waveguides to silicon
     x[SiO2_mask.flatten()] = 0.  # set the other edges to SiO2
@@ -437,10 +464,12 @@ if __name__ == '__main__':
     epivar_history = []
     cur_iter = [0]
 
+    beta_thresh = 64
     betas = [8, 16, 32, 64, 128, 256]
-    max_evals = [80, 100, 120, 130, 150, 100]
-    tol_epi = np.array([1e-4] * opt.nf)
-    tol_lw = np.array([1e-4] * 2)
+    max_evals = [80, 80, 100, 120, 120, 60]
+    tol_epi = np.array([1e-4] * 2 * len(frqs)) # R, 1-T
+    tol_lw = np.array([1e-8] * 2) # line width, line spacing
+
     for beta, max_eval in zip(betas, max_evals):
         solver = nlopt.opt(algorithm, n + 1)
         solver.set_lower_bounds(lb)
@@ -449,28 +478,45 @@ if __name__ == '__main__':
         solver.set_maxeval(max_eval)
         solver.set_param("dual_ftol_rel",1e-7)
         solver.add_inequality_mconstraint(
-            lambda r, x, g: c(r, x, g, eta_i, beta),
+            lambda rr, xx, gg: c(rr, xx, gg, eta_i, beta),
             tol_epi,
         )
+        solver.set_param("verbosity", 1)
+
+        opt = mode_converter_optimization(
+            input_flux,
+            input_flux_data,
+            True, # use_damping
+            False if beta <= beta_thresh else True, # use_epsavg
+        )
+
         # apply the minimum linewidth constraint
         # only in the final "epoch" to an initial
         # binary design from the previous epoch
         if beta == betas[-1]:
+            res = np.zeros(2)
+            grd = np.zeros((2,n+1))
+            t = glc(res, x, grd, beta)
             solver.add_inequality_mconstraint(
-                lambda r, x, g: glc(r, x, g, beta),
+                lambda rr, xx, gg: glc(rr, xx, gg, beta),
                 tol_lw,
             )
 
         # execute a single forward run before the start of each
         # epoch and manually set the initial epigraph variable to
         # slightly larger than the largest value of the objective
-        # function over the six wavelengths.
+        # function over the six wavelengths (and the lengthscale constraint).
         t0 = opt(
             [mapping(x[1:], eta_i, beta)],
             need_gradient=False,
         )
-        x[0] = np.amax(t0[0]) + 0.1
-        print(f"data:, {beta}, {t0[0]}, {x[0]}")
+        t0 = np.concatenate((t0[0][0],t0[0][1]))
+        x[0] = np.amax(t0)
+        if beta == betas[-1]:
+            x[0] = 1.05 * max(x[0], t)
+        else:
+            x[0] = 1.05 * x[0]
+        print(f"data:, {beta}, {t0}, {x[0]}")
 
         x[:] = solver.optimize(x)
 
@@ -480,28 +526,28 @@ if __name__ == '__main__':
             beta,
         ).reshape(Nx,Ny)
 
+        # save the unmapped weights and a bitmap image
+        # of the design at the end of each epoch
+        fig, ax = plt.subplots()
+        ax.imshow(
+            optimal_design_weights,
+            cmap='binary',
+            interpolation='none',
+        )
+        ax.set_axis_off()
         if mp.am_master():
-            # save a bitmap image of the design at the end of each epoch
-            plt.figure()
-            plt.imshow(
-                optimal_design_weights,
-                cmap='binary',
-                interpolation='none',
-            )
-            plt.axis('off')
-            plt.savefig(
+            fig.savefig(
                 f'optimal_design_beta{beta}.png',
                 dpi=150,
                 bbox_inches='tight',
             )
-
-    # save the optimal design as a 2d array in CSV format
-    np.savetxt(
-        'optimal_design.csv',
-        optimal_design_weights,
-        fmt='%4.2f',
-        delimiter=','
-    )
+            # save the final design as a 2d array in CSV format
+            np.savetxt(
+                f'design_weights_beta{beta}.csv',
+                x[1:].reshape(Nx,Ny),
+                fmt='%4.2f',
+                delimiter=','
+            )
 
     # save all the important optimization parameters and data
     with open("optimal_design.npz","wb") as fl:
