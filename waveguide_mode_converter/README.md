@@ -48,3 +48,129 @@ The script will print out CSV-formatted performance metrics. For example,
 -34.11, -0.19
 -30.67, -0.26
 ```
+
+For comparison, the following are the worst-case reflectance and
+transmittance spectra for the topology-optimized designs using Meep
+with various minimum lengthscales.
+
+The data consists of four columns: (1) reflectance (`refl`) or
+transmittance (`tran`), (2) wavelength (μm), (3)
+reflectance/transmittance (linear scale in [0,1]), and (4)
+reflectance/transmittance (log scale in dB).
+
+1. Minimum lengthscale constraint: 50 nm.
+
+measured lengthscale: 63 nm.
+
+file: converter_meep_min_linewidth_50nm.csv
+
+```
+refl:, 1.295, 0.010312, -19.866366
+tran:, 1.265, 0.920025, -0.362003
+```
+
+2. Minimum lengthscale constraint: 60 nm.
+
+measured lengthscale: 81 nm.
+
+file: converter_meep_min_linewidth_60nm.csv
+
+```
+refl:, 1.295, 0.000588, -32.305168
+tran:, 1.295, 0.959421, -0.179906
+```
+
+3. Minimum lengthscale constraint: 70 nm.
+
+measured lengthscale: 81 nm.
+
+file: converter_meep_min_linewidth_70nm.csv
+
+```
+refl:, 1.295, 0.001660, -27.799095
+tran:, 1.265, 0.901512, -0.450283
+```
+
+4. Minimum lengthscale constraint: 80 nm.
+
+measured lengthscale: 106 nm.
+
+file: converter_meep_min_linewidth_80nm.csv
+
+```
+refl:, 1.295, 0.001188, -29.253338
+tran:, 1.275, 0.920259, -0.360899
+```
+
+5. Minimum lengthscale constraint: 90 nm.
+
+measured lengthscale: 113 nm.
+
+file: converter_meep_min_linewidth_90nm.csv
+
+```
+refl:, 1.265, 0.007773, -21.094135
+tran:, 1.265, 0.619815, -2.077378
+```
+
+6. Minimum lengthscale constraint: 100 nm.
+
+measured lengthscale: 88 nm.
+
+file: converter_meep_min_linewidth_100nm.csv
+
+```
+refl:, 1.295, 0.044475, -13.518838
+tran:, 1.265, 0.608069, -2.160469
+```
+
+7. Minimum lengthscale constraint: 125 nm.
+
+```
+refl:, 1.295, 0.014873, -18.275893
+tran:, 1.295, 0.427343, -3.692235
+```
+
+8. Minimum lengthscale constraint: 150 nm.
+
+measured lengthscale: 163 nm.
+
+file: converter_meep_min_linewidth_150nm.csv
+
+```
+refl:, 1.295, 0.016925, -17.714820
+tran:, 1.265, 0.617705, -2.092192
+```
+
+9. Minimum lengthscale constraint: 175 nm.
+
+measured lengthscale: 175 nm.
+
+file: converter_meep_min_linewidth_175nm.csv
+
+```
+refl:, 1.265, 0.003253, -24.877215
+tran:, 1.265, 0.518961, -2.848656
+```
+
+10. Minimum lengthscale constraint: 200 nm.
+
+measured lengthscale: 325 nm.
+
+file: converter_meep_min_linewidth_200nm.csv
+
+```
+refl:, 1.295, 0.001232, -29.093873
+tran:, 1.265, 0.816701, -0.879367
+```
+
+11. Minimum lengthscale constraint: 225 nm.
+
+measured lengthscale: 275 nm.
+
+file: converter_meep_min_linewidth_275nm.csv
+
+```
+refl:, 1.265, 0.015390, -18.127650
+tran:, 1.290, 0.273556, -5.629535
+```
