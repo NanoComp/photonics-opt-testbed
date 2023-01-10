@@ -49,7 +49,14 @@ The script will print out CSV-formatted performance metrics. For example,
 -30.67, -0.26
 ```
 
-For comparison, the following are the reflectance and transmittance spectra for the topology-optimized designs using Meep with various minimum lengthscales.
+For comparison, the following are the worst-case reflectance and
+transmittance spectra for the topology-optimized designs using Meep
+with various minimum lengthscales.
+
+The data consists of four columns: (1) reflectance (`refl`) or
+transmittance (`tran`), (2) wavelength (μm), (3)
+reflectance/transmittance (linear scale in [0,1]), and (4)
+reflectance/transmittance (log scale in dB).
 
 1. Minimum lengthscale constraint: 50 nm.
 
@@ -57,26 +64,9 @@ measured lengthscale: 63 nm.
 
 file: converter_meep_min_linewidth_50nm.csv
 
-**reflectance into mode 1: wavelength (μm), reflectance, reflectance (dB)**
 ```
-refl:, 1.265, 0.009628, -20.164705
-refl:, 1.270, 0.009643, -20.158021
-refl:, 1.275, 0.009707, -20.128966
-refl:, 1.285, 0.009950, -20.021659
-refl:, 1.290, 0.010118, -19.949185
 refl:, 1.295, 0.010312, -19.866366
-worst-case reflectance (dB):, -19.866366
-```
-
-**transmittance into mode 2: wavelength (μm), transmittance, transmittance (dB)**
-```
 tran:, 1.265, 0.920025, -0.362003
-tran:, 1.270, 0.922174, -0.351873
-tran:, 1.275, 0.924045, -0.343067
-tran:, 1.285, 0.927015, -0.329132
-tran:, 1.290, 0.928125, -0.323937
-tran:, 1.295, 0.928992, -0.319879
-worst-case transmittance (dB):, -0.362003
 ```
 
 2. Minimum lengthscale constraint: 60 nm.
@@ -85,108 +75,102 @@ measured lengthscale: 81 nm.
 
 file: converter_meep_min_linewidth_60nm.csv
 
-**reflectance into mode 1: wavelength (μm), reflectance, reflectance (dB)**
 ```
-refl:, 1.265, 0.000374, -34.275727
-refl:, 1.270, 0.000286, -35.443571
-refl:, 1.275, 0.000265, -35.774808
-refl:, 1.285, 0.000372, -34.299325
-refl:, 1.290, 0.000473, -33.255701
 refl:, 1.295, 0.000588, -32.305168
-worst-case reflectance (dB):, -32.305168
-```
-
-**transmittance into mode 2: wavelength (μm), transmittance, transmittance (dB)**
-```
-tran:, 1.265, 0.963868, -0.159824
-tran:, 1.270, 0.963965, -0.159388
-tran:, 1.275, 0.963685, -0.160648
-tran:, 1.285, 0.962119, -0.167712
-tran:, 1.290, 0.960892, -0.173256
 tran:, 1.295, 0.959421, -0.179906
-worst-case transmittance (dB):, -0.179906
 ```
 
 3. Minimum lengthscale constraint: 70 nm.
 
-measured lengthscale: 100 nm.
+measured lengthscale: 81 nm.
 
 file: converter_meep_min_linewidth_70nm.csv
 
-**reflectance into mode 1: wavelength (μm), reflectance, reflectance (dB)**
 ```
-refl:, 1.265, 0.019693, -17.056968
-refl:, 1.270, 0.017361, -17.604295
-refl:, 1.275, 0.015615, -18.064702
-refl:, 1.285, 0.013498, -18.697453
-refl:, 1.290, 0.012916, -18.888789
-refl:, 1.295, 0.012493, -19.033184
-worst-case reflectance (dB):, -17.056968
-```
-
-**transmittance into mode 2: wavelength (μm), transmittance, transmittance (dB)**
-```
-tran:, 1.265, 0.667054, -1.758389
-tran:, 1.270, 0.675296, -1.705058
-tran:, 1.275, 0.683075, -1.655316
-tran:, 1.285, 0.696382, -1.571525
-tran:, 1.290, 0.700852, -1.543736
-tran:, 1.295, 0.702586, -1.533007
-worst-case transmittance (dB):, -1.758389
+refl:, 1.295, 0.001660, -27.799095
+tran:, 1.265, 0.901512, -0.450283
 ```
 
 4. Minimum lengthscale constraint: 80 nm.
 
-measured lengthscale: 75 nm.
+measured lengthscale: 106 nm.
 
 file: converter_meep_min_linewidth_80nm.csv
 
-**reflectance into mode 1: wavelength (μm), reflectance, reflectance (dB)**
 ```
-refl:, 1.265, 0.061416, -12.117155
-refl:, 1.270, 0.062535, -12.038793
-refl:, 1.275, 0.063447, -11.975903
-refl:, 1.285, 0.064677, -11.892475
-refl:, 1.290, 0.065058, -11.866985
-refl:, 1.295, 0.065391, -11.844820
-worst-case reflectance (dB):, -11.844820
-```
-
-**transmittance into mode 2: wavelength (μm), transmittance, transmittance (dB)**
-```
-tran:, 1.265, 0.679133, -1.680453
-tran:, 1.270, 0.677549, -1.690590
-tran:, 1.275, 0.674796, -1.708273
-tran:, 1.285, 0.665450, -1.768848
-tran:, 1.290, 0.658723, -1.812969
-tran:, 1.295, 0.650600, -1.866862
-worst-case transmittance (dB):, -1.866862
+refl:, 1.295, 0.001188, -29.253338
+tran:, 1.275, 0.920259, -0.360899
 ```
 
 5. Minimum lengthscale constraint: 90 nm.
 
-measured lengthscale: 113 nm
+measured lengthscale: 113 nm.
 
-converter_meep_min_linewidth_90nm.csv
+file: converter_meep_min_linewidth_90nm.csv
 
-**reflectance into mode 1: wavelength (μm), reflectance, reflectance (dB)**
 ```
 refl:, 1.265, 0.007773, -21.094135
-refl:, 1.270, 0.007432, -21.288749
-refl:, 1.275, 0.007204, -21.424158
-refl:, 1.285, 0.007083, -21.497768
-refl:, 1.290, 0.007142, -21.461586
-refl:, 1.295, 0.007244, -21.400120
-worst-case reflectance (dB):, -21.094135
+tran:, 1.265, 0.619815, -2.077378
 ```
 
-**transmittance into mode 2: wavelength (μm), transmittance, transmittance (dB)**
+6. Minimum lengthscale constraint: 100 nm.
+
+measured lengthscale: 88 nm.
+
+file: converter_meep_min_linewidth_100nm.csv
+
 ```
-tran:, 1.265, 0.619815, -2.077378
-tran:, 1.270, 0.631644, -1.995273
-tran:, 1.275, 0.643311, -1.915788
-tran:, 1.285, 0.666046, -1.764957
-tran:, 1.290, 0.676643, -1.696403
-tran:, 1.295, 0.686333, -1.634649
-worst-case transmittance (dB):, -2.077378
+refl:, 1.295, 0.044475, -13.518838
+tran:, 1.265, 0.608069, -2.160469
+```
+
+7. Minimum lengthscale constraint: 125 nm.
+
+```
+refl:, 1.295, 0.014873, -18.275893
+tran:, 1.295, 0.427343, -3.692235
+```
+
+8. Minimum lengthscale constraint: 150 nm.
+
+measured lengthscale: 163 nm.
+
+file: converter_meep_min_linewidth_150nm.csv
+
+```
+refl:, 1.295, 0.016925, -17.714820
+tran:, 1.265, 0.617705, -2.092192
+```
+
+9. Minimum lengthscale constraint: 175 nm.
+
+measured lengthscale: 175 nm.
+
+file: converter_meep_min_linewidth_175nm.csv
+
+```
+refl:, 1.265, 0.003253, -24.877215
+tran:, 1.265, 0.518961, -2.848656
+```
+
+10. Minimum lengthscale constraint: 200 nm.
+
+measured lengthscale: 325 nm.
+
+file: converter_meep_min_linewidth_200nm.csv
+
+```
+refl:, 1.295, 0.001232, -29.093873
+tran:, 1.265, 0.816701, -0.879367
+```
+
+11. Minimum lengthscale constraint: 225 nm.
+
+measured lengthscale: 275 nm.
+
+file: converter_meep_min_linewidth_275nm.csv
+
+```
+refl:, 1.265, 0.015390, -18.127650
+tran:, 1.290, 0.273556, -5.629535
 ```
