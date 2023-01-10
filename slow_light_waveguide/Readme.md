@@ -26,7 +26,11 @@ The design problem is stated as
 - **Target $k$ points**: Target $k$ points
 - **Initial guess**:  $a_1=0.9$ and $a_2=1.1$  
 
-The blue print design  with $\eta=0.5$ obtained using the robust optimization formulation considering the parameters above and corresponding performance are shown in the figure below. [Design_Dnum_2.csv](https://github.com/NanoComp/photonics-opt-testbed/blob/main/slow_light_waveguide/Design_Dnum_2.csv) is the corresponding csv format design pattern. 
+The blue print design  with $\eta=0.5$ obtained using the robust optimization formulation considering the parameters above and corresponding performance are shown in the figure below. [Design_Dnum_2.csv](https://github.com/NanoComp/photonics-opt-testbed/blob/main/slow_light_waveguide/Design_Dnum_2.csv) is the corresponding csv format design pattern.  [Opt_Band.csv](https://github.com/NanoComp/photonics-opt-testbed/blob/main/slow_light_waveguide/Opt_Band.csv) is the corresponding band structure in csv format with first column for k.   [Opt_Group_index.csv](https://github.com/NanoComp/photonics-opt-testbed/blob/main/slow_light_waveguide/Opt_Group_index.csv) is the corresponding group index in csv format with first column for k 
 
 
 ![schematic](/slow_light_waveguide/Resp_Dnum_2_FF.png)
+
+The optimization history is shown in the figure below.
+
+![schematic](/Opt_History_SlowLight.png)
