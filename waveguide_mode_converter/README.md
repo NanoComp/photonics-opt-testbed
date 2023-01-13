@@ -47,7 +47,6 @@ python3 ./run.py designs/converter_*.csv
 
 Will produce the output below:
 
-```
 # Design file, Length scale (nm), Worst-case reflection (dB), Worst-case transmission (dB)
 converter_generator_circle_10_x47530832_w11_s483.csv, 93.75, -22.50, -0.19
 converter_generator_circle_10_x47530832_w19_s483.csv, 93.75, -28.30, -0.29
@@ -129,19 +128,18 @@ converter_generator_circle_8_x47530832_w50_s956.csv, 76.171875, -28.26, -0.06
 converter_generator_circle_8_x47530832_w58_s969.csv, 76.171875, -28.66, -0.15
 converter_generator_circle_8_x47530832_w66_s878.csv, 82.03125, -29.08, -0.13
 converter_generator_circle_8_x47530832_w74_s989.csv, 82.03125, -34.79, -0.11
+converter_meep_min_linewidth_50nm.csv, 62.5, -33.79, -0.10
+converter_meep_min_linewidth_60nm.csv, 87.5, -33.35, -0.12
+converter_meep_min_linewidth_70nm.csv, 81.3, -26.68, -0.30
+converter_meep_min_linewidth_80nm.csv, 105.46875, -28.40, -0.34
+converter_meep_min_linewidth_90nm.csv, 93.75, -26.62, -0.65
 converter_meep_min_linewidth_100nm.csv, 87.890625, -13.02, -2.09
 converter_meep_min_linewidth_125nm.csv, 23.4375, -13.16, -4.49
 converter_meep_min_linewidth_150nm.csv, 164.0625, -16.68, -2.08
 converter_meep_min_linewidth_175nm.csv, 175.78125, -24.44, -2.80
 converter_meep_min_linewidth_200nm.csv, 41.015625, -9.56, -1.58
-converter_meep_min_linewidth_225nm.csv, 23.4375, -17.45, -9.09
-converter_meep_min_linewidth_50nm.csv, 41.015625, -18.39, -0.92
-converter_meep_min_linewidth_60nm.csv, 82.03125, -23.37, -0.76
-converter_meep_min_linewidth_70nm.csv, 82.03125, -27.59, -0.42
-converter_meep_min_linewidth_80nm.csv, 105.46875, -28.40, -0.34
-converter_meep_min_linewidth_90nm.csv, 23.4375, -15.23, -1.14
+converter_meep_min_linewidth_225nm.csv, 368.75, -30.09, -3.99
 converter_meep_no_mirror_sym.csv, 46.875, -26.45, -0.62
 converter_meep_x_mirror_sym.csv, 105.46875, -32.54, -0.18
 converter_schubert_circle_x33491673_w307_s134.csv, 105.46875, -34.11, -0.19
 converter_schubert_notched_x33491673_w183_s159.csv, 105.46875, -30.67, -0.26
-```
