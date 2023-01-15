@@ -31,7 +31,8 @@ Mode converter designs are under the `designs/` subfolder.
 |----------------------------------------------------------|---------------------------------------------------------------------------------------------------------|
 | converter_schubert_circle_x33491673_w307_s134.csv        | Circular brush design from [Schubert et al. (2022)](https://doi.org/10.1021/acsphotonics.2c00313)       |
 | converter_schubert_notched_x33491673_w183_s159.csv       | Notched-square brush design from [Schubert et al. (2022)](https://doi.org/10.1021/acsphotonics.2c00313) |
-| converter_generator_circle_{6,8,10,12,14,16,18,20}\*.csv | Circular brush designs of varying minimum feature size                                                  |
+| converter_generator_circle_{6,8,10,12,14,16,18,20}\*.csv | Circular brush designs of varying minimum feature size optimized via Ceviche                            |
+| converter_meep_\*.csv                                    | Designs produced using a filter+projection scheme optimized via Meep.                                   |
 
 ## Usage
 
