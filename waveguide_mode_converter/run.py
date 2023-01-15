@@ -7,9 +7,15 @@ reported for each design.
 """
 
 import argparse
+import os
 import numpy as np
 import ceviche_challenges
 import ceviche_challenges.units as u
+import sys
+
+sys.path.append('../')
+import ruler
+
 
 INPUT_PORT_AXIS = 1
 INPUT_PORT_IDX = 0
@@ -43,7 +49,7 @@ model = ceviche_challenges.mode_converter.model.ModeConverterModel(
     spec,
 )
 
-print('# Worst-case reflection (dB), Worst-case transmission (dB)')
+print('# Design file, Length scale (nm), Worst-case reflection (dB), Worst-case transmission (dB)')
 for file in args.file:
     design = np.loadtxt(file, delimiter=',')
 
@@ -53,4 +59,9 @@ for file in args.file:
     reflection_dB_worst = np.max(s_params_dB[:, INPUT_PORT_IDX])
     transmission_dB_worst = np.min(s_params_dB[:, OUTPUT_PORT_IDX])
 
-    print(f'{reflection_dB_worst:.2f}, {transmission_dB_worst:.2f}')
+    length_scale = ruler.minimum_length(
+        model.density(design),
+        [v * params.resolution.to_value(u.nm) for v in model.shape]
+    )
+
+    print(f'{os.path.basename(file)}, {length_scale}, {reflection_dB_worst:.2f}, {transmission_dB_worst:.2f}')

@@ -27,150 +27,120 @@ These parameter values correspond to the mode converter demonstrated in
 
 Mode converter designs are under the `designs/` subfolder.
 
-| File                                               | Description                                                                                             |
-|----------------------------------------------------|---------------------------------------------------------------------------------------------------------|
-| converter_schubert_circle_x33491673_w307_s134.csv  | Circular brush design from [Schubert et al. (2022)](https://doi.org/10.1021/acsphotonics.2c00313)       |
-| converter_schubert_notched_x33491673_w183_s159.csv | Notched-square brush design from [Schubert et al. (2022)](https://doi.org/10.1021/acsphotonics.2c00313) |
+| File                                                     | Description                                                                                             |
+|----------------------------------------------------------|---------------------------------------------------------------------------------------------------------|
+| converter_schubert_circle_x33491673_w307_s134.csv        | Circular brush design from [Schubert et al. (2022)](https://doi.org/10.1021/acsphotonics.2c00313)       |
+| converter_schubert_notched_x33491673_w183_s159.csv       | Notched-square brush design from [Schubert et al. (2022)](https://doi.org/10.1021/acsphotonics.2c00313) |
+| converter_generator_circle_{6,8,10,12,14,16,18,20}\*.csv | Circular brush designs of varying minimum feature size                                                  |
 
 ## Usage
 
 The mode converter test problem can be run on a list of specified designs via
-the `run.sh` script. For example,
+the `run.sh` script.
+
+Running the following:
 
 ```
-python3 ./run.py designs/converter_schubert_circle_x33491673_w307_s134.csv designs/converter_schubert_notched_x33491673_w183_s159.csv
+python3 ./run.py designs/converter_*.csv
 ```
 
-The script will print out CSV-formatted performance metrics. For example,
+Will produce the output below:
 
 ```
-# Worst-case reflection (dB), Worst-case transmission (dB)
--34.11, -0.19
--30.67, -0.26
-```
-
-For comparison, the following are the worst-case reflectance and
-transmittance spectra for the topology-optimized designs using Meep
-with various minimum lengthscales.
-
-The data consists of four columns: (1) reflectance (`refl`) or
-transmittance (`tran`), (2) wavelength (μm), (3)
-reflectance/transmittance (linear scale in [0,1]), and (4)
-reflectance/transmittance (log scale in dB).
-
-1. Minimum lengthscale constraint: 50 nm.
-
-measured lengthscale: 63 nm.
-
-file: converter_meep_min_linewidth_50nm.csv
-
-```
-refl:, 1.295, 0.010312, -19.866366
-tran:, 1.265, 0.920025, -0.362003
-```
-
-2. Minimum lengthscale constraint: 60 nm.
-
-measured lengthscale: 81 nm.
-
-file: converter_meep_min_linewidth_60nm.csv
-
-```
-refl:, 1.295, 0.000588, -32.305168
-tran:, 1.295, 0.959421, -0.179906
-```
-
-3. Minimum lengthscale constraint: 70 nm.
-
-measured lengthscale: 81 nm.
-
-file: converter_meep_min_linewidth_70nm.csv
-
-```
-refl:, 1.295, 0.001660, -27.799095
-tran:, 1.265, 0.901512, -0.450283
-```
-
-4. Minimum lengthscale constraint: 80 nm.
-
-measured lengthscale: 106 nm.
-
-file: converter_meep_min_linewidth_80nm.csv
-
-```
-refl:, 1.295, 0.001188, -29.253338
-tran:, 1.275, 0.920259, -0.360899
-```
-
-5. Minimum lengthscale constraint: 90 nm.
-
-measured lengthscale: 113 nm.
-
-file: converter_meep_min_linewidth_90nm.csv
-
-```
-refl:, 1.265, 0.007773, -21.094135
-tran:, 1.265, 0.619815, -2.077378
-```
-
-6. Minimum lengthscale constraint: 100 nm.
-
-measured lengthscale: 88 nm.
-
-file: converter_meep_min_linewidth_100nm.csv
-
-```
-refl:, 1.295, 0.044475, -13.518838
-tran:, 1.265, 0.608069, -2.160469
-```
-
-7. Minimum lengthscale constraint: 125 nm.
-
-```
-refl:, 1.295, 0.014873, -18.275893
-tran:, 1.295, 0.427343, -3.692235
-```
-
-8. Minimum lengthscale constraint: 150 nm.
-
-measured lengthscale: 163 nm.
-
-file: converter_meep_min_linewidth_150nm.csv
-
-```
-refl:, 1.295, 0.016925, -17.714820
-tran:, 1.265, 0.617705, -2.092192
-```
-
-9. Minimum lengthscale constraint: 175 nm.
-
-measured lengthscale: 175 nm.
-
-file: converter_meep_min_linewidth_175nm.csv
-
-```
-refl:, 1.265, 0.003253, -24.877215
-tran:, 1.265, 0.518961, -2.848656
-```
-
-10. Minimum lengthscale constraint: 200 nm.
-
-measured lengthscale: 325 nm.
-
-file: converter_meep_min_linewidth_200nm.csv
-
-```
-refl:, 1.295, 0.001232, -29.093873
-tran:, 1.265, 0.816701, -0.879367
-```
-
-11. Minimum lengthscale constraint: 225 nm.
-
-measured lengthscale: 275 nm.
-
-file: converter_meep_min_linewidth_275nm.csv
-
-```
-refl:, 1.265, 0.015390, -18.127650
-tran:, 1.290, 0.273556, -5.629535
+# Design file, Length scale (nm), Worst-case reflection (dB), Worst-case transmission (dB)
+converter_generator_circle_10_x47530832_w11_s483.csv, 93.75, -22.50, -0.19
+converter_generator_circle_10_x47530832_w19_s483.csv, 93.75, -28.30, -0.29
+converter_generator_circle_10_x47530832_w27_s681.csv, 105.46875, -27.17, -0.19
+converter_generator_circle_10_x47530832_w35_s719.csv, 105.46875, -34.01, -0.24
+converter_generator_circle_10_x47530832_w3_s584.csv, 105.46875, -36.30, -0.18
+converter_generator_circle_10_x47530832_w43_s590.csv, 105.46875, -37.79, -0.12
+converter_generator_circle_10_x47530832_w51_s853.csv, 93.75, -37.49, -0.22
+converter_generator_circle_10_x47530832_w59_s920.csv, 93.75, -23.84, -0.21
+converter_generator_circle_10_x47530832_w67_s350.csv, 93.75, -29.21, -0.19
+converter_generator_circle_10_x47530832_w75_s547.csv, 93.75, -32.32, -0.16
+converter_generator_circle_12_x47530832_w12_s248.csv, 111.328125, -28.49, -0.35
+converter_generator_circle_12_x47530832_w20_s640.csv, 111.328125, -28.00, -0.29
+converter_generator_circle_12_x47530832_w28_s528.csv, 111.328125, -32.18, -0.16
+converter_generator_circle_12_x47530832_w36_s982.csv, 117.1875, -28.46, -0.35
+converter_generator_circle_12_x47530832_w44_s653.csv, 111.328125, -22.86, -0.34
+converter_generator_circle_12_x47530832_w4_s804.csv, 117.1875, -21.20, -0.57
+converter_generator_circle_12_x47530832_w52_s954.csv, 111.328125, -20.46, -0.53
+converter_generator_circle_12_x47530832_w60_s857.csv, 117.1875, -29.14, -0.24
+converter_generator_circle_12_x47530832_w68_s88.csv, 111.328125, -33.10, -0.52
+converter_generator_circle_12_x47530832_w76_s364.csv, 111.328125, -26.20, -0.48
+converter_generator_circle_14_x47530832_w13_s793.csv, 128.90625, -33.62, -0.19
+converter_generator_circle_14_x47530832_w21_s956.csv, 128.90625, -35.49, -0.25
+converter_generator_circle_14_x47530832_w29_s991.csv, 140.625, -34.11, -0.51
+converter_generator_circle_14_x47530832_w37_s975.csv, 146.484375, -33.08, -0.30
+converter_generator_circle_14_x47530832_w45_s878.csv, 128.90625, -29.39, -0.29
+converter_generator_circle_14_x47530832_w53_s519.csv, 140.625, -24.07, -0.43
+converter_generator_circle_14_x47530832_w5_s139.csv, 140.625, -20.67, -0.58
+converter_generator_circle_14_x47530832_w61_s667.csv, 128.90625, -28.21, -0.30
+converter_generator_circle_14_x47530832_w69_s668.csv, 140.625, -28.21, -0.22
+converter_generator_circle_14_x47530832_w77_s765.csv, 140.625, -25.35, -0.25
+converter_generator_circle_16_x47530832_w14_s150.csv, 152.34375, -21.23, -0.81
+converter_generator_circle_16_x47530832_w22_s167.csv, 169.921875, -19.71, -1.08
+converter_generator_circle_16_x47530832_w30_s624.csv, 152.34375, -26.43, -0.41
+converter_generator_circle_16_x47530832_w38_s404.csv, 152.34375, -17.62, -0.88
+converter_generator_circle_16_x47530832_w46_s770.csv, 152.34375, -23.29, -0.77
+converter_generator_circle_16_x47530832_w54_s109.csv, 152.34375, -19.77, -0.77
+converter_generator_circle_16_x47530832_w62_s193.csv, 164.0625, -29.32, -0.61
+converter_generator_circle_16_x47530832_w6_s445.csv, 169.921875, -18.98, -0.67
+converter_generator_circle_16_x47530832_w70_s892.csv, 164.0625, -20.63, -0.81
+converter_generator_circle_16_x47530832_w78_s371.csv, 152.34375, -27.60, -0.81
+converter_generator_circle_18_x47530832_w15_s879.csv, 169.921875, -23.66, -0.93
+converter_generator_circle_18_x47530832_w23_s228.csv, 169.921875, -22.50, -0.96
+converter_generator_circle_18_x47530832_w31_s46.csv, 181.640625, -23.49, -0.86
+converter_generator_circle_18_x47530832_w39_s593.csv, 181.640625, -28.45, -0.67
+converter_generator_circle_18_x47530832_w47_s439.csv, 181.640625, -31.18, -0.60
+converter_generator_circle_18_x47530832_w55_s534.csv, 181.640625, -27.49, -0.79
+converter_generator_circle_18_x47530832_w63_s544.csv, 187.5, -19.35, -0.76
+converter_generator_circle_18_x47530832_w71_s711.csv, 181.640625, -27.51, -0.74
+converter_generator_circle_18_x47530832_w79_s267.csv, 181.640625, -26.93, -0.87
+converter_generator_circle_18_x47530832_w7_s311.csv, 187.5, -22.70, -0.86
+converter_generator_circle_20_x47530832_w16_s416.csv, 205.078125, -18.43, -1.23
+converter_generator_circle_20_x47530832_w24_s997.csv, 205.078125, -20.84, -0.95
+converter_generator_circle_20_x47530832_w32_s982.csv, 199.21875, -24.16, -0.66
+converter_generator_circle_20_x47530832_w40_s988.csv, 222.65625, -18.16, -1.34
+converter_generator_circle_20_x47530832_w48_s996.csv, 205.078125, -19.63, -0.95
+converter_generator_circle_20_x47530832_w56_s972.csv, 210.9375, -29.46, -0.86
+converter_generator_circle_20_x47530832_w64_s997.csv, 216.796875, -32.20, -0.85
+converter_generator_circle_20_x47530832_w72_s846.csv, 210.9375, -22.31, -0.83
+converter_generator_circle_20_x47530832_w80_s599.csv, 222.65625, -25.08, -1.04
+converter_generator_circle_20_x47530832_w8_s938.csv, 205.078125, -20.08, -0.90
+converter_generator_circle_6_x47530832_w17_s412.csv, 58.59375, -41.09, -0.14
+converter_generator_circle_6_x47530832_w1_s796.csv, 64.453125, -29.96, -0.09
+converter_generator_circle_6_x47530832_w25_s986.csv, 58.59375, -34.60, -0.07
+converter_generator_circle_6_x47530832_w33_s242.csv, 58.59375, -30.74, -0.08
+converter_generator_circle_6_x47530832_w41_s990.csv, 64.453125, -33.51, -0.09
+converter_generator_circle_6_x47530832_w49_s770.csv, 58.59375, -40.64, -0.07
+converter_generator_circle_6_x47530832_w57_s968.csv, 58.59375, -34.17, -0.06
+converter_generator_circle_6_x47530832_w65_s909.csv, 58.59375, -41.95, -0.04
+converter_generator_circle_6_x47530832_w73_s975.csv, 58.59375, -37.55, -0.05
+converter_generator_circle_6_x47530832_w9_s893.csv, 58.59375, -33.79, -0.08
+converter_generator_circle_8_x47530832_w10_s898.csv, 82.03125, -30.73, -0.13
+converter_generator_circle_8_x47530832_w18_s655.csv, 76.171875, -32.76, -0.13
+converter_generator_circle_8_x47530832_w26_s710.csv, 76.171875, -33.98, -0.09
+converter_generator_circle_8_x47530832_w2_s430.csv, 82.03125, -36.23, -0.09
+converter_generator_circle_8_x47530832_w34_s965.csv, 82.03125, -27.76, -0.11
+converter_generator_circle_8_x47530832_w42_s878.csv, 76.171875, -27.34, -0.15
+converter_generator_circle_8_x47530832_w50_s956.csv, 76.171875, -28.26, -0.06
+converter_generator_circle_8_x47530832_w58_s969.csv, 76.171875, -28.66, -0.15
+converter_generator_circle_8_x47530832_w66_s878.csv, 82.03125, -29.08, -0.13
+converter_generator_circle_8_x47530832_w74_s989.csv, 82.03125, -34.79, -0.11
+converter_meep_min_linewidth_100nm.csv, 87.890625, -13.02, -2.09
+converter_meep_min_linewidth_125nm.csv, 23.4375, -13.16, -4.49
+converter_meep_min_linewidth_150nm.csv, 164.0625, -16.68, -2.08
+converter_meep_min_linewidth_175nm.csv, 175.78125, -24.44, -2.80
+converter_meep_min_linewidth_200nm.csv, 41.015625, -9.56, -1.58
+converter_meep_min_linewidth_225nm.csv, 23.4375, -17.45, -9.09
+converter_meep_min_linewidth_50nm.csv, 41.015625, -18.39, -0.92
+converter_meep_min_linewidth_60nm.csv, 82.03125, -23.37, -0.76
+converter_meep_min_linewidth_70nm.csv, 82.03125, -27.59, -0.42
+converter_meep_min_linewidth_80nm.csv, 105.46875, -28.40, -0.34
+converter_meep_min_linewidth_90nm.csv, 23.4375, -15.23, -1.14
+converter_meep_no_mirror_sym.csv, 46.875, -26.45, -0.62
+converter_meep_x_mirror_sym.csv, 105.46875, -32.54, -0.18
+converter_schubert_circle_x33491673_w307_s134.csv, 105.46875, -34.11, -0.19
+converter_schubert_notched_x33491673_w183_s159.csv, 105.46875, -30.67, -0.26
 ```
