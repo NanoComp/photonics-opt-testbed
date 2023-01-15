@@ -36,7 +36,7 @@ Mode converter designs are under the `designs/` subfolder.
 ## Usage
 
 The mode converter test problem can be run on a list of specified designs via
-the `run.sh` script.
+the `run.py` script.
 
 Running the following:
 
