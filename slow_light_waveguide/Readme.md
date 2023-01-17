@@ -21,7 +21,7 @@ The design problem is stated as
 
     $\frac{1}{\varepsilon^{\eta}_e}=(1-\bar{\rho}^{\eta}_e)\frac{1}{\varepsilon_A}+\overline{\rho}^{\eta}_e  \frac{1}{\varepsilon_S}, \quad   \varepsilon_A=1 \quad,\varepsilon_S=3.476^2$
   
-- **Robust formulation**: $ \eta \in [0.35, 0.5, 0.65]$.
+- **Robust formulation**: $\eta\in [0.35, 0.5, 0.65]$.
 - **Target group index**: $n^*_g=25$
 - **Target $k$ points**: Target $k$ points
 - **Initial guess**:  $a_1=0.9$ and $a_2=1.1$  
