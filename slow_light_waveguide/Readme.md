@@ -14,7 +14,7 @@ The design problem is stated as
  - **Regularization**: density filter (filter radius: 1/8a) + projection
  - **Continuation scheme in the projection**: 	
  
-     For every 40th iteration or if  ( ($\Delta \rho$ < 1e-3  || $\Delta f < 1e-3 $ )& $\beta $ < 50),   set $\beta=1.3 \beta$.   
+     For every 40th iteration or if  ( ($\Delta \rho < 1e-3$  || $\Delta f < 1e-3 $ )& $\beta $ < 50),   set $\beta=1.3 \beta$.   
      If  $\Delta \rho < 1e-4 $ ||  $\Delta f$ < 1e-4,  terminate. 
  
 - **Interpolation of the relative permittivity of element e**:
