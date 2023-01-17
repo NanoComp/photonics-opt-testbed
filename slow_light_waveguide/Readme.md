@@ -19,7 +19,7 @@ The design problem is stated as
  
 - **Interpolation of the relative permittivity of element e**:
 
-    $\frac{1}{\varepsilon^{\eta}_e}=(1-\bar{\rho}^{\eta}_e)\frac{1}{\varepsilon_A}+\overline{\rho}^{\eta}_e  \frac{1}{\varepsilon_{Si}}, \quad   \varepsilon_A=1 \quad,\varepsilon_{Si}=3.476^2$
+    $\frac{1}{\varepsilon^{\eta}_e}=(1-\bar{\rho}^{\eta}_e)\frac{1}{\varepsilon_A}+\overline{\rho}^{\eta}_e  \frac{1}{\varepsilon_Si}, \quad   \varepsilon_A=1 \quad,\varepsilon_Si=3.476^2$
   
 - **Robust formulation**: $ \eta \in [0.35, 0.5, 0.65]$.
 - **Target group index**: $n^*_g=25$
