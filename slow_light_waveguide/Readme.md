@@ -21,12 +21,13 @@ The design problem is stated as
 
     $\frac{1}{\varepsilon^{\eta}_e}=(1-\bar{\rho}^{\eta}_e)\frac{1}{\varepsilon_A}+\overline{\rho}^{\eta}_e  \frac{1}{\varepsilon_S}, \quad   \varepsilon_A=1 \quad,\varepsilon_S=3.476^2$
   
-- **Robust formulation**: $ \eta \in [0.35, 0.5, 0.65]$.
+- **Robust formulation**: $\eta\in [0.35, 0.5, 0.65]$.
 - **Target group index**: $n^*_g=25$
 - **Target $k$ points**: Target $k$ points
 - **Initial guess**:  $a_1=0.9$ and $a_2=1.1$  
 
-The blue print design  with $\eta=0.5$ obtained using the robust optimization formulation considering the parameters above and corresponding performance are shown in the figure below. [Design_Dnum_2.csv](/slow_light_waveguide/Design_Dnum_2.csv) is the corresponding csv format design pattern and [HigRes_Design_Dnum_2.csv](/slow_light_waveguide/HigRes_Design_Dnum_2.csv) is the design pattern in high resolution.  [Opt_Band.csv](/slow_light_waveguide/Opt_Band.csv) is the corresponding band structure in csv format with first column for k.   [Opt_Group_index.csv](/slow_light_waveguide/Opt_Group_index.csv) is the corresponding group index in csv format with first column for k 
+The blue print design  with $\eta=0.5$ obtained using the robust optimization formulation considering the parameters above and corresponding performance are shown in the figure below. [Design_Dnum_2.csv](/slow_light_waveguide/Design_Dnum_2.csv) is the corresponding csv format design pattern. 
+ [Opt_Band.csv](/slow_light_waveguide/Opt_Band.csv) is the corresponding band structure in csv format with first column for k and [Opt_Group_index.csv](/slow_light_waveguide/Opt_Group_index.csv) is the corresponding group index in csv format with first column for k. [HigRes_DesMatch_Opt_Dnum_2.csv](/slow_light_waveguide/HigRes_DesMatch_Opt_Dnum_2.csv) is the design pattern in high resolution extracted using the contour form  the optimized design. 
 
 
 ![schematic](/slow_light_waveguide/Resp_Dnum_2_FF.png)
