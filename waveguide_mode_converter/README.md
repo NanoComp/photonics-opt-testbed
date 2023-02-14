@@ -128,11 +128,11 @@ converter_generator_circle_8_x47530832_w50_s956.csv, 76.171875, -28.26, -0.06
 converter_generator_circle_8_x47530832_w58_s969.csv, 76.171875, -28.66, -0.15
 converter_generator_circle_8_x47530832_w66_s878.csv, 82.03125, -29.08, -0.13
 converter_generator_circle_8_x47530832_w74_s989.csv, 82.03125, -34.79, -0.11
-converter_meep_min_linewidth_50nm.csv, 62.5, -33.79, -0.10
-converter_meep_min_linewidth_60nm.csv, 87.5, -33.35, -0.12
-converter_meep_min_linewidth_70nm.csv, 81.3, -26.68, -0.30
+converter_meep_min_linewidth_50nm.csv, 65.9, -33.79, -0.10
+converter_meep_min_linewidth_60nm.csv, 84.5, -33.35, -0.12
+converter_meep_min_linewidth_70nm.csv, 84.5, -26.68, -0.30
 converter_meep_min_linewidth_80nm.csv, 105.46875, -28.40, -0.34
-converter_meep_min_linewidth_90nm.csv, 93.75, -26.62, -0.65
+converter_meep_min_linewidth_90nm.csv, 90.7, -26.62, -0.65
 converter_meep_min_linewidth_100nm.csv, 87.890625, -13.02, -2.09
 converter_meep_min_linewidth_125nm.csv, 23.4375, -13.16, -4.49
 converter_meep_min_linewidth_150nm.csv, 164.0625, -16.68, -2.08
