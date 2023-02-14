@@ -46,7 +46,7 @@ python3 ./run.py designs/converter_*.csv
 ```
 
 Will produce the output below:
-
+```
 # Design file, Length scale (nm), Worst-case reflection (dB), Worst-case transmission (dB)
 converter_generator_circle_10_x47530832_w11_s483.csv, 93.75, -22.50, -0.19
 converter_generator_circle_10_x47530832_w19_s483.csv, 93.75, -28.30, -0.29
@@ -143,3 +143,4 @@ converter_meep_no_mirror_sym.csv, 46.875, -26.45, -0.62
 converter_meep_x_mirror_sym.csv, 105.46875, -32.54, -0.18
 converter_schubert_circle_x33491673_w307_s134.csv, 105.46875, -34.11, -0.19
 converter_schubert_notched_x33491673_w183_s159.csv, 105.46875, -30.67, -0.26
+```
