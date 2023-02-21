@@ -1,91 +1,39 @@
 import numpy as np
-from typing import Iterable, Optional, Tuple
-
-solid_indicator = ['solid', 'solids', 'black', 's', 'b', 'true', '1', True, 1]
-void_indicator = ['invert', 'void', 'white', 'v', 'w', 'false', '0', True, 0]
-minimum_indicator = ['minimum', 'minimal', 'min']
-both_indicator = ['both', 'two', '2', 2]
+from typing import Tuple, List
 
 
-def minimum_length(
-        arr: Iterable[np.ndarray],
-        phys_size: Iterable[np.ndarray],
-        margin_size: Iterable[np.ndarray] = np.zeros((2, 2)),
-        measure_region: str = 'min',
-        pad_mode: Optional[str] = None,
-        with_boundary: bool = False) -> Tuple[float, Optional[float]]:
+def solid_minimum_length(
+    arr: np.ndarray,
+    phys_size: Tuple[float, ...],
+    margin_size: List[Tuple[float, float]] = ((0, 0), (0, 0))
+) -> float:
     '''
-    Compute the minimum length scale in a design pattern.
+    Compute the minimum length scale of solid regions in a design pattern.
 
     arr: input array that represents a design pattern.
     phys_size: physical size of the design pattern.
     margin_size: physical size of borders that need to be discarded.
-    measure_region: region of interest, which can be solid, void, both, or the region with a smaller length scale ('min').
-    pad_mode: pad mode for the design pattern, which can be none (None), solid, void, or the edge mode ('edge').
-    with_boundary: Only meaningful when pad_mode is not none. If false, ignore the small features formed with boundaries; if true, do not ignore them. 
     '''
-    phys_size, margin_size = _ruler_initialize(arr, phys_size, margin_size)
-    shorter_entire_side = min(
-        phys_size)  # shorter side of the entire design region
-    all_pixel_sides = _pixel_size(arr, phys_size)
-    shorter_pixel_side = min(all_pixel_sides)  # shorter side of a pixel
-    dims = len(phys_size)  # dimension, should be 2 or 3
-    '''
-    If all elements in the array are the same,
-    the code simply regards the shorter side of the entire pattern as the minimum length scale,
-    regardless of whether the pattern is solid or void.
-    '''
-    if len(np.unique(arr)) == 1:
-        return shorter_entire_side
-    '''
-    Design patterns with non-binary values are thresholded by 'binarize_threshold'.
-    The appearance of interior solid pixels is thresholded by 'interior_pixel_threshold'.
-    The projection strength in some morphological operations is 'proj_strength'.
-    '''
-    binarize_threshold, interior_pixel_threshold, proj_strength = 0.5, 0.5, 1e6
-    arr = _binarize(arr, binarize_threshold)
-    margin_number = _margin(arr, phys_size, margin_size)
 
-    if isinstance(measure_region, str):
-        measure_region = measure_region.lower()
+    phys_size, short_entire_side, pixel_size, short_pixel_side, margin_number, dims, arr = _ruler_initialize(
+        arr, phys_size, margin_size)
 
     if dims == 1:
         arr = arr[margin_number[0, 0]:len(arr) - margin_number[0, 1]]
-        solid_min_length, void_min_length = _minimum_length_1d(arr)
-
-        if measure_region in solid_indicator:
-            return solid_min_length * shorter_pixel_side
-        elif measure_region in void_indicator:
-            return void_min_length * shorter_pixel_side
-        elif measure_region in minimum_indicator:
-            return min(solid_min_length, void_min_length) * shorter_pixel_side
-        elif measure_region in both_indicator:
-            return solid_min_length * shorter_pixel_side, void_min_length * shorter_pixel_side
-        else:
-            AssertionError(
-                "Invalid argument for measure_region in the function minimum_length."
-            )
+        solid_min_length, _ = _minimum_length_1d(arr)
+        return solid_min_length * short_pixel_side
 
     arr_shape = np.array(arr.shape)
+
+    # pad_number: numbers of pixels corresponding to the extra widths padded to the design pattern.
     pad_number = np.ceil(arr_shape / 2).astype(int)
     pad_width = *((int(np.ceil(s / 2)), int(np.ceil(s / 2)))
                   for s in arr.shape),
-    if isinstance(pad_mode, str): pad_mode = pad_mode.lower()
+    arr_padded = np.pad(arr, pad_width=pad_width, mode='edge')
+    padded_shape = arr_shape + 2 * pad_number
+    padded_size = padded_shape * pixel_size
 
-    if pad_mode == None or pad_mode == 'edge':
-        arr_padded = np.pad(arr, pad_width=pad_width, mode='edge')
-    elif pad_mode in solid_indicator:
-        arr_padded = np.pad(arr, pad_width=pad_width, constant_values=1)
-    elif pad_mode in void_indicator:
-        arr_padded = np.pad(arr, pad_width=pad_width, constant_values=0)
-    else:
-        AssertionError("Invalid pad mode.")
-
-    def _interior_pixel_number(diameter,
-                               arr,
-                               margin_number,
-                               pad_number,
-                               dual=True):
+    def _interior_pixel_number(diameter, arr):
         '''
         diameter: diameter of the structuring element, which acts like a probe
         arr: 2d or 3d input array.
@@ -94,85 +42,105 @@ def minimum_length(
         dual: if true, calculate the difference between opening and closing;
               if not true, calculate the difference between opening and the input array.
         '''
-        padded_shape = arr_shape + 2 * pad_number
-        padded_size = padded_shape * all_pixel_sides
-        if dual:
-            diff_image = abs(
-                heaviside_open(arr, diameter, padded_size, proj_strength) -
-                heaviside_close(arr, diameter, padded_size, proj_strength))
-        else:
-            diff_image = abs(
-                heaviside_open(arr, diameter, padded_size, proj_strength) -
-                arr)
+        diff_image = abs(heaviside_open(arr, diameter, padded_size) - arr)
         return _interior_solid_pixel_count(diff_image, margin_number,
                                            pad_number, dims)
 
-    if measure_region in minimum_indicator and not with_boundary:
-        min_len_padded, status = _search(
-            [shorter_pixel_side, shorter_entire_side],
-            min(all_pixel_sides), lambda d: _interior_pixel_number(
-                d, arr_padded, margin_number, pad_number),
-            interior_pixel_threshold)
-        return min_len_padded, None
+    min_len, status = _search([short_pixel_side, short_entire_side],
+                              min(pixel_size),
+                              lambda d: _interior_pixel_number(d, arr_padded))
 
-    if measure_region in solid_indicator + both_indicator + minimum_indicator:
-        min_len_solid_padded, status = _search(
-            [shorter_pixel_side, shorter_entire_side], min(all_pixel_sides),
-            lambda d: _interior_pixel_number(
-                d, arr_padded, margin_number, pad_number, dual=False),
-            interior_pixel_threshold)
-        min_len_solid = min_len_solid_padded
+    return min_len
 
-        if pad_mode == None:
-            min_len_solid_unpadded, status = _search([
-                shorter_pixel_side, shorter_entire_side
-            ], min(all_pixel_sides), lambda d: _interior_pixel_number(
-                d, arr, margin_number, pad_number=np.zeros(dims), dual=False),
-                                                     interior_pixel_threshold)
 
-            if abs(min_len_solid_unpadded -
-                   min_len_solid_padded) < shorter_entire_side / 2:
-                min_len_solid = min_len_solid_unpadded
-            else:
-                min_len_solid = min_len_solid_unpadded / 2
+def void_minimum_length(
+    arr: np.ndarray,
+    phys_size: Tuple[float, ...],
+    margin_size: List[Tuple[float, float]] = ((0, 0), (0, 0))
+) -> float:
+    '''
+    Compute the minimum length scale of void regions in a design pattern.
 
-    if measure_region in void_indicator + both_indicator + minimum_indicator:
-        min_len_void_padded, status = _search(
-            [shorter_pixel_side, shorter_entire_side], min(all_pixel_sides),
-            lambda d: _interior_pixel_number(
-                d, 1 - arr_padded, margin_number, pad_number, dual=False),
-            interior_pixel_threshold)
-        min_len_void = min_len_void_padded
+    arr: input array that represents a design pattern.
+    phys_size: physical size of the design pattern.
+    margin_size: physical size of borders that need to be discarded.
+    '''
 
-        if pad_mode == None:
-            min_len_void_unpadded, status = _search(
-                [shorter_pixel_side, shorter_entire_side],
-                min(all_pixel_sides),
-                lambda d: _interior_pixel_number(d,
-                                                 1 - arr,
-                                                 margin_number,
-                                                 pad_number=np.zeros(dims),
-                                                 dual=False),
-                interior_pixel_threshold)
+    arr = 1 - arr
+    return solid_minimum_length(arr, phys_size, margin_size)
 
-            if abs(min_len_void_unpadded -
-                   min_len_void_padded) < shorter_entire_side / 2:
-                min_len_void = min_len_void_unpadded
-            else:
-                min_len_void = min_len_void_unpadded / 2
 
-    if measure_region in solid_indicator:
-        return min_len_solid, None
-    elif measure_region in void_indicator:
-        return min_len_void, None
-    elif measure_region in minimum_indicator:
-        return min(min_len_solid, min_len_void), None
-    elif measure_region in both_indicator:
-        return min_len_solid, min_len_void
-    else:
-        AssertionError(
-            "Invalid argument for measure_region in the function minimum_length."
-        )
+def both_minimum_length(
+    arr: np.ndarray,
+    phys_size: Tuple[float, ...],
+    margin_size: List[Tuple[float, float]] = ((0, 0), (0, 0))
+) -> Tuple[float, float]:
+    '''
+    Compute the minimum length scale of both solid and void regions in a design pattern.
+
+    arr: input array that represents a design pattern.
+    phys_size: physical size of the design pattern.
+    margin_size: physical size of borders that need to be discarded.
+    '''
+
+    return solid_minimum_length(arr, phys_size,
+                                margin_size), void_minimum_length(
+                                    arr, phys_size, margin_size)
+
+
+def dual_minimum_length(
+    arr: np.ndarray,
+    phys_size: Tuple[float, ...],
+    margin_size: List[Tuple[float, float]] = ((0, 0), (0, 0))
+) -> float:
+    '''
+    For 2d or 3d design patterns, compute the minimum length scale by calculating the difference between open and close operations.
+    Ideally, the result should be equal to the smaller one between solid and void minimum length scales.
+    For 1d design patterns, compute this smaller one by comparing solid and void minimum length scales.
+
+    arr: input array that represents a design pattern.
+    phys_size: physical size of the design pattern.
+    margin_size: physical size of borders that need to be discarded.
+    '''
+
+    phys_size, short_entire_side, pixel_size, short_pixel_side, margin_number, dims, arr = _ruler_initialize(
+        arr, phys_size, margin_size)
+
+    if dims == 1:
+        arr = arr[margin_number[0, 0]:len(arr) - margin_number[0, 1]]
+        solid_min_length, void_min_length = _minimum_length_1d(arr)
+        return min(solid_min_length, void_min_length) * short_pixel_side
+
+    arr_shape = np.array(arr.shape)
+
+    # pad_number: numbers of pixels corresponding to the extra widths padded to the design pattern.
+    pad_number = np.ceil(arr_shape / 2).astype(int)
+    pad_width = *((int(np.ceil(s / 2)), int(np.ceil(s / 2)))
+                  for s in arr.shape),
+    arr_padded = np.pad(arr, pad_width=pad_width, mode='edge')
+    padded_shape = arr_shape + 2 * pad_number
+    padded_size = padded_shape * pixel_size
+
+    def _interior_pixel_number(diameter, arr):
+        '''
+        diameter: diameter of the structuring element, which acts like a probe
+        arr: 2d or 3d input array.
+        margin_number: numbers of pixels corresponding to the marginal widths that need to be discarded.
+        pad_number: numbers of pixels corresponding to the extra widths padded to the design pattern.
+        dual: if true, calculate the difference between opening and closing;
+              if not true, calculate the difference between opening and the input array.
+        '''
+        diff_image = abs(
+            heaviside_open(arr, diameter, padded_size) -
+            heaviside_close(arr, diameter, padded_size))
+        return _interior_solid_pixel_count(diff_image, margin_number,
+                                           pad_number, dims)
+
+    min_len, status = _search([short_pixel_side, short_entire_side],
+                              min(pixel_size),
+                              lambda d: _interior_pixel_number(d, arr_padded))
+
+    return solid_minimum_length(arr, phys_size, margin_size)
 
 
 def _ruler_initialize(arr, phys_size, margin_size):
@@ -184,19 +152,19 @@ def _ruler_initialize(arr, phys_size, margin_size):
     margin_size: physical size of borders that need to be discarded.
     '''
     if isinstance(phys_size, np.ndarray):
-        phys_size = phys_size[np.squeeze(phys_size).nonzero()]  # physical size
+        phys_size = np.squeeze(phys_size)
+        phys_size = phys_size[phys_size.nonzero()]  # physical size
     elif isinstance(phys_size, list) or isinstance(phys_size, tuple):
-        phys_size = np.array(phys_size)[np.squeeze(
-            np.array(phys_size)).nonzero()]
+        phys_size = np.squeeze(np.array(phys_size))
+        phys_size = phys_size[phys_size.nonzero()]
     elif isinstance(phys_size, float) or isinstance(phys_size, int):
         phys_size = np.array([phys_size])
     else:
         AssertionError("Invalid format of the physical size.")
 
     dims = len(phys_size)  # dimension, should be 1, 2 or 3
-    assert np.squeeze(
-        arr
-    ).ndim == dims, 'The physical size and the dimension of the input array do not match.'
+    arr = np.squeeze(arr)
+    assert arr.ndim == dims, 'The physical size and the dimension of the input array do not match.'
     '''
     Users sometimes need to discard certain marginal regions, the withds of which are specified by margin_size.
     The first pair of elements correspond to the first dimension, the second pair of elements correspond to the second dimension,
@@ -208,10 +176,26 @@ def _ruler_initialize(arr, phys_size, margin_size):
         print(
             'Warning: The row number of margin_size is larger than the dimension; The redundant row(s) will be discarded.'
         )
-    return phys_size, margin_size
+
+    short_entire_side = min(
+        phys_size)  # shorter side of the entire design region
+    pixel_size = _get_pixel_size(arr, phys_size)
+    short_pixel_side = min(pixel_size)  # shorter side of a pixel
+    '''
+    If all elements in the array are the same,
+    the code simply regards the shorter side of the entire pattern as the minimum length scale,
+    regardless of whether the pattern is solid or void.
+    '''
+    if len(np.unique(arr)) == 1:
+        return short_entire_side
+
+    arr = _binarize(arr, threshold=0.5)
+    margin_number = _margin(arr, phys_size, np.array(margin_size))
+
+    return phys_size, short_entire_side, pixel_size, short_pixel_side, margin_number, dims, arr
 
 
-def _search(arg_range, arg_threshold, function, function_threshold):
+def _search(arg_range, arg_threshold, function, function_threshold=0.5):
     '''
     Binary search.
 
@@ -385,10 +369,10 @@ def _cylindrical_filter(arr, diameter, phys_size):
     return _convolution(arr, kernel)
 
 
-def heaviside_erode(arr: Iterable[np.ndarray],
+def heaviside_erode(arr: np.ndarray,
                     diameter: float,
-                    phys_size: Iterable[np.ndarray],
-                    proj_strength: float = 1e6) -> Iterable[np.ndarray]:
+                    phys_size: Tuple[float, ...],
+                    proj_strength: float = 1e6) -> np.ndarray:
     '''
     Heaviside erosion with a given diameter.
 
@@ -402,10 +386,10 @@ def heaviside_erode(arr: Iterable[np.ndarray],
                   (1 - arr_hat)) + np.exp(-proj_strength) * (1 - arr_hat)
 
 
-def heaviside_dilate(arr: Iterable[np.ndarray],
+def heaviside_dilate(arr: np.ndarray,
                      diameter: float,
-                     phys_size: Iterable[np.ndarray],
-                     proj_strength: float = 1e6) -> Iterable[np.ndarray]:
+                     phys_size: Tuple[float, ...],
+                     proj_strength: float = 1e6) -> np.ndarray:
     '''
     Heaviside dilation with a given diameter.
 
@@ -416,10 +400,10 @@ def heaviside_dilate(arr: Iterable[np.ndarray],
         -proj_strength * arr_hat) + np.exp(-proj_strength) * arr_hat
 
 
-def heaviside_open(arr: Iterable[np.ndarray],
+def heaviside_open(arr: np.ndarray,
                    diameter: float,
-                   phys_size: Iterable[np.ndarray],
-                   proj_strength: float = 1e6) -> Iterable[np.ndarray]:
+                   phys_size: Tuple[float, ...],
+                   proj_strength: float = 1e6) -> np.ndarray:
     '''
     Heaviside open, which is erosion followed by dilation.
     
@@ -430,10 +414,10 @@ def heaviside_open(arr: Iterable[np.ndarray],
     return hdhe
 
 
-def heaviside_close(arr: Iterable[np.ndarray],
+def heaviside_close(arr: np.ndarray,
                     diameter: float,
-                    phys_size: Iterable[np.ndarray],
-                    proj_strength: float = 1e6) -> Iterable[np.ndarray]:
+                    phys_size: Tuple[float, ...],
+                    proj_strength: float = 1e6) -> np.ndarray:
     '''
     Heaviside close, which is dilation followed by erosion.
     
@@ -464,13 +448,13 @@ def _margin(arr, phys_size, margin_size):
         int)  # numbers of pixels of marginal regions
 
     assert (margin_number >= 0).all(), 'Margin widths should be nonnegative.'
-    assert (np.array(arr.shape) - np.sum(margin_number, axis=1) >=
+    assert (np.array(arr.shape)[0:len(np.sum(margin_number, axis=1))] - np.sum(margin_number, axis=1) >=
             3).all(), 'Too wide margin or too narrow design region.'
 
     return margin_number
 
 
-def _pixel_size(arr, phys_size):
+def _get_pixel_size(arr, phys_size):
     '''
     Compute the size of a single pixels.
 
