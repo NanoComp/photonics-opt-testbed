@@ -1,13 +1,14 @@
 import numpy as np
 from typing import Tuple, Optional
 
-threshold = 0.5 # threshold for binarization
+threshold = 0.5  # threshold for binarization
+
 
 def solid_minimum_length(
-    arr: np.ndarray,
-    phys_size: Optional[Tuple[float, ...]] = None,
-    margin_size: Optional[Tuple[Tuple[float, float],...]] = None
-) -> float:
+        arr: np.ndarray,
+        phys_size: Optional[Tuple[float, ...]] = None,
+        margin_size: Optional[Tuple[Tuple[float, float],
+                                    ...]] = None) -> float:
     """
     Compute the minimum length scale of solid regions in a design pattern.
 
@@ -20,8 +21,8 @@ def solid_minimum_length(
         A float that represents the minimum length scale of solid regions in the design pattern. The unit is the same as that of `phys_size`. If `phys_size` is None, return the minimum length scale in the number of pixels.
     """
 
-    arr, pixel_size, short_pixel_side, short_entire_side = _ruler_initialize(arr, phys_size)
-
+    arr, pixel_size, short_pixel_side, short_entire_side = _ruler_initialize(
+        arr, phys_size)
     """
     If all elements in the array are the same, the code simply regards the shorter side of the entire pattern as the minimum length scale, regardless of whether the pattern is solid or void.
     """
@@ -46,22 +47,24 @@ def solid_minimum_length(
             A boolean that indicates whether the difference between the design pattern and its opening happens at the interior of solid regions, with the edge regions specified by `margin_size` disregarded.
         """
         open_diff = heaviside_open(arr, diameter, pixel_size) ^ arr
-        interior = arr ^ _get_border(arr, direction = "in")
+        interior = arr ^ _get_border(arr, direction="in")
         interior_diff = open_diff & interior
         if margin_size != None:
             interior_diff = _trim(interior_diff, margin_size, pixel_size)
         return interior_diff.any()
 
-    min_len, _ = _search([short_pixel_side, short_entire_side],min(pixel_size),lambda d: _interior_pixel_number(d, arr))
+    min_len, _ = _search([short_pixel_side, short_entire_side],
+                         min(pixel_size),
+                         lambda d: _interior_pixel_number(d, arr))
 
     return min_len
 
 
 def void_minimum_length(
-    arr: np.ndarray,
-    phys_size: Optional[Tuple[float, ...]] = None,
-    margin_size: Optional[Tuple[Tuple[float, float],...]] = None
-) -> float:
+        arr: np.ndarray,
+        phys_size: Optional[Tuple[float, ...]] = None,
+        margin_size: Optional[Tuple[Tuple[float, float],
+                                    ...]] = None) -> float:
     """
     Compute the minimum length scale of void regions in a design pattern.
 
@@ -74,14 +77,15 @@ def void_minimum_length(
         A float that represents the minimum length scale of void regions in the design pattern. The unit is the same as that of `phys_size`. If `phys_size` is None, return the minimum length scale in the number of pixels.
     """
 
-    arr, pixel_size, short_pixel_side, short_entire_side = _ruler_initialize(arr, phys_size)
+    arr, pixel_size, short_pixel_side, short_entire_side = _ruler_initialize(
+        arr, phys_size)
     return solid_minimum_length(~arr, phys_size, margin_size)
 
 
 def both_minimum_length(
     arr: np.ndarray,
     phys_size: Optional[Tuple[float, ...]] = None,
-    margin_size: Optional[Tuple[Tuple[float, float],...]] = None
+    margin_size: Optional[Tuple[Tuple[float, float], ...]] = None
 ) -> Tuple[float, float]:
     """
     Compute the minimum length scales of both solid and void regions in a design pattern.
@@ -95,14 +99,16 @@ def both_minimum_length(
         A tuple of two floats that represent the minimum length scales of solid and void regions, respectively. The unit is the same as that of `phys_size`. If `phys_size` is None, return the minimum length scale in the number of pixels.
     """
 
-    return solid_minimum_length(arr, phys_size, margin_size), void_minimum_length(arr, phys_size, margin_size)
+    return solid_minimum_length(arr, phys_size,
+                                margin_size), void_minimum_length(
+                                    arr, phys_size, margin_size)
 
 
 def dual_minimum_length(
-    arr: np.ndarray,
-    phys_size: Optional[Tuple[float, ...]] = None,
-    margin_size: Optional[Tuple[Tuple[float, float],...]] = None
-) -> float:
+        arr: np.ndarray,
+        phys_size: Optional[Tuple[float, ...]] = None,
+        margin_size: Optional[Tuple[Tuple[float, float],
+                                    ...]] = None) -> float:
     """
     For 2d or 3d design patterns, compute the minimum length scale through the difference between morphological opening and closing.
     Ideally, the result should be equal to the smaller one between solid and void minimum length scales.
@@ -117,8 +123,8 @@ def dual_minimum_length(
         A float that represents the minimum length scale in the design pattern. The unit is the same as that of `phys_size`. If `phys_size` is None, return the minimum length scale in the number of pixels.
     """
 
-    arr, pixel_size, short_pixel_side, short_entire_side = _ruler_initialize(arr, phys_size)
-
+    arr, pixel_size, short_pixel_side, short_entire_side = _ruler_initialize(
+        arr, phys_size)
     """
     If all elements in the array are the same,
     the code simply regards the shorter side of the entire pattern as the minimum length scale,
@@ -145,15 +151,15 @@ def dual_minimum_length(
         """
         closing = heaviside_close(arr, diameter, pixel_size)
         close_open_diff = heaviside_open(arr, diameter, pixel_size) ^ closing
-        interior = closing ^ _get_border(arr, direction = "both")
+        interior = closing ^ _get_border(arr, direction="both")
         interior_diff = close_open_diff & interior
         if margin_size != None:
             interior_diff = _trim(interior_diff, margin_size, pixel_size)
         return interior_diff.any()
 
     min_len, _ = _search([short_pixel_side, short_entire_side],
-                              min(pixel_size),
-                              lambda d: _interior_pixel_number(d, arr))
+                         min(pixel_size),
+                         lambda d: _interior_pixel_number(d, arr))
 
     return min_len
 
@@ -177,20 +183,25 @@ def _ruler_initialize(arr, phys_size):
 
     if phys_size == None:
         phys_size = arr.shape
-    elif isinstance(phys_size, np.ndarray) or isinstance(phys_size, list) or isinstance(phys_size, tuple):
+    elif isinstance(phys_size, np.ndarray) or isinstance(
+            phys_size, list) or isinstance(phys_size, tuple):
         phys_size = np.squeeze(phys_size)
-        phys_size = phys_size[phys_size.nonzero()] # keep nonzero elements only
+        phys_size = phys_size[
+            phys_size.nonzero()]  # keep nonzero elements only
     elif isinstance(phys_size, float) or isinstance(phys_size, int):
         phys_size = np.array([phys_size])
     else:
         AssertionError("Invalid format of the physical size.")
 
-    assert arr.ndim == len(phys_size), 'The physical size and the dimension of the input array do not match.'
+    assert arr.ndim == len(
+        phys_size
+    ), 'The physical size and the dimension of the input array do not match.'
 
-    short_entire_side = min(phys_size)  # shorter side of the entire design region
+    short_entire_side = min(
+        phys_size)  # shorter side of the entire design region
     pixel_size = _get_pixel_size(arr, phys_size)
     short_pixel_side = min(pixel_size)  # shorter side of a pixel
-    arr = _binarize(arr) # Boolean array
+    arr = _binarize(arr)  # Boolean array
 
     return arr, pixel_size, short_pixel_side, short_entire_side
 
@@ -325,7 +336,8 @@ def _kernel_pad(arr, pad_to):
         out = np.concatenate((upper, middle, lower), axis=2)
     else:
         raise AssertionError(
-            "The function is not implemented for so many or so few dimensions.")
+            "The function is not implemented for so many or so few dimensions."
+        )
 
     return out
 
@@ -350,10 +362,13 @@ def _convolution(arr, kernel):
     kernel = _kernel_pad(kernel, arr_sh * 3 + ker_sh * 2)
     kernel = np.squeeze(kernel) / np.sum(kernel)  # normalize the kernel
 
-    K, A = np.fft.fftn(kernel), np.fft.fftn(arr)  # transform to frequency domain for fast convolution
+    K, A = np.fft.fftn(kernel), np.fft.fftn(
+        arr)  # transform to frequency domain for fast convolution
     arr_out = np.real(np.fft.ifftn(K * A))  # convolution
 
-    return _center(arr_out, arr_sh+ker_sh*2) # padding is not totally removed at this stage in case of unwanted influence from boundaries
+    return _center(
+        arr_out, arr_sh + ker_sh * 2
+    )  # padding is not totally removed at this stage in case of unwanted influence from boundaries
 
 
 def _cylindrical_filter(arr, diameter, pixel_size):
@@ -372,7 +387,9 @@ def _cylindrical_filter(arr, diameter, pixel_size):
         AssertionError: If the input array is not 2d or 3d, or if the pixel size and the dimension of the input array do not match.
     """
 
-    assert arr.ndim == len(pixel_size), 'The pixel size and the dimension of the input array do not match.'
+    assert arr.ndim == len(
+        pixel_size
+    ), 'The pixel size and the dimension of the input array do not match.'
 
     x_tick = np.arange(0, diameter / 2, pixel_size[0])
     y_tick = np.arange(0, diameter / 2, pixel_size[1])
@@ -395,9 +412,9 @@ def _cylindrical_filter(arr, diameter, pixel_size):
 
 
 def _heaviside_erode(arr: np.ndarray,
-                    diameter: float,
-                    pixel_size: Tuple[float, ...],
-                    proj_strength: float = 1e6) -> np.ndarray:
+                     diameter: float,
+                     pixel_size: Tuple[float, ...],
+                     proj_strength: float = 1e6) -> np.ndarray:
     """
     Heaviside erosion.
 
@@ -412,14 +429,16 @@ def _heaviside_erode(arr: np.ndarray,
     """
 
     filtered = _cylindrical_filter(arr, diameter, pixel_size)
-    projected = np.exp(-proj_strength * (1 - filtered)) + np.exp(-proj_strength) * (1 - filtered)
-    return projected > threshold # convert to a Boolean array
+    projected = np.exp(
+        -proj_strength *
+        (1 - filtered)) + np.exp(-proj_strength) * (1 - filtered)
+    return projected > threshold  # convert to a Boolean array
 
 
 def _heaviside_dilate(arr: np.ndarray,
-                     diameter: float,
-                     pixel_size: Tuple[float, ...],
-                     proj_strength: float = 1e6) -> np.ndarray:
+                      diameter: float,
+                      pixel_size: Tuple[float, ...],
+                      proj_strength: float = 1e6) -> np.ndarray:
     """
     Heaviside dilation.
 
@@ -433,8 +452,9 @@ def _heaviside_dilate(arr: np.ndarray,
         A Boolean array that has a larger size than the input array due to padding.
     """
     filtered = _cylindrical_filter(arr, diameter, pixel_size)
-    projected = 1 - np.exp(-proj_strength * filtered) + np.exp(-proj_strength) * filtered
-    return projected > threshold # convert the result to a Boolean array
+    projected = 1 - np.exp(
+        -proj_strength * filtered) + np.exp(-proj_strength) * filtered
+    return projected > threshold  # convert the result to a Boolean array
 
 
 def heaviside_open(arr: np.ndarray,
@@ -456,7 +476,7 @@ def heaviside_open(arr: np.ndarray,
 
     he = _heaviside_erode(arr, diameter, pixel_size, proj_strength)
     hdhe = _heaviside_dilate(he, diameter, pixel_size, proj_strength)
-    return _center(hdhe, arr.shape) # remove padding
+    return _center(hdhe, arr.shape)  # remove padding
 
 
 def heaviside_close(arr: np.ndarray,
@@ -478,10 +498,10 @@ def heaviside_close(arr: np.ndarray,
 
     hd = _heaviside_dilate(arr, diameter, pixel_size, proj_strength)
     hehd = _heaviside_erode(hd, diameter, pixel_size, proj_strength)
-    return _center(hehd, arr.shape) # remove padding
+    return _center(hehd, arr.shape)  # remove padding
 
 
-def _get_border(arr, direction = "in"):
+def _get_border(arr, direction="in"):
     """
     Get inner borders, outer borders, or union of both inner and outer borders of solid regions.
 
@@ -496,23 +516,24 @@ def _get_border(arr, direction = "in"):
         AssertionError: If the option provided to `direction` is not "in", "out", or "both".
     """
 
-    pixel_size = (1,)*arr.ndim
-    diameter = 2.01 # With this pixel size and diameter, the resulting structuring element has the shape of a plus sign.
+    pixel_size = (1, ) * arr.ndim
+    diameter = 2.01  # With this pixel size and diameter, the resulting structuring element has the shape of a plus sign.
 
-    if direction == "in": # inner borders of solid regions
+    if direction == "in":  # inner borders of solid regions
         eroded = _heaviside_erode(arr, diameter, pixel_size)
         eroded = _center(eroded, arr.shape)
         return eroded ^ arr
-    elif direction == "out": # outer borders of solid regions
+    elif direction == "out":  # outer borders of solid regions
         dilated = _heaviside_dilate(arr, diameter, pixel_size)
         eroded = _center(dilated, arr.shape)
         return dilated ^ arr
-    elif direction == "both": # union of inner and outer borders of solid regions
+    elif direction == "both":  # union of inner and outer borders of solid regions
         eroded = _heaviside_erode(arr, diameter, pixel_size)
         dilated = _heaviside_dilate(arr, diameter, pixel_size)
         return _center(dilated ^ eroded, arr.shape)
     else:
-        raise AssertionError("The direction at the border can only be in, out, or both.")
+        raise AssertionError(
+            "The direction at the border can only be in, out, or both.")
 
 
 def _trim(arr, margin_size, pixel_size):
@@ -533,23 +554,29 @@ def _trim(arr, margin_size, pixel_size):
 
     arr = np.squeeze(arr)
     arr_dim = arr.ndim
-    margin_size = abs(np.reshape(margin_size,(-1,2)))
+    margin_size = abs(np.reshape(margin_size, (-1, 2)))
     margin_dim = len(margin_size)
 
     assert margin_dim <= arr_dim, 'The number of rows of margin_size should not exceeds the dimension of the input array.'
 
-    margin_number = np.array(margin_size)/pixel_size[0:len(margin_size)].reshape(len(margin_size),1)
-    margin_number = np.round(margin_number).astype(int)  # numbers of pixels of marginal regions
-    
-    assert (np.array(arr.shape)[0:margin_dim] - np.sum(margin_number, axis=1) >=
-        2).all(), 'Too wide margin or too narrow design region.'
-    
+    margin_number = np.array(
+        margin_size) / pixel_size[0:len(margin_size)].reshape(
+            len(margin_size), 1)
+    margin_number = np.round(margin_number).astype(
+        int)  # numbers of pixels of marginal regions
+
+    assert (np.array(arr.shape)[0:margin_dim] - np.sum(margin_number, axis=1)
+            >= 2).all(), 'Too wide margin or too narrow design region.'
+
     if margin_dim == 1:
         return arr[margin_number[0][0]:-margin_number[0][1]]
     elif margin_dim == 2:
-        return arr[margin_number[0][0]:-margin_number[0][1],margin_number[1][0]:-margin_number[1][1]]
+        return arr[margin_number[0][0]:-margin_number[0][1],
+                   margin_number[1][0]:-margin_number[1][1]]
     elif margin_dim == 3:
-        return arr[margin_number[0][0]:-margin_number[0][1],margin_number[1][0]:-margin_number[1][1],margin_number[2][0]:-margin_number[2][1]]
+        return arr[margin_number[0][0]:-margin_number[0][1],
+                   margin_number[1][0]:-margin_number[1][1],
+                   margin_number[2][0]:-margin_number[2][1]]
     else:
         AssertionError("The input array has too many dimensions.")
 
@@ -579,7 +606,8 @@ def _binarize(arr):
     Returns:
         An Boolean array.
     """
-    return arr > threshold * max(arr.flatten()) + (1 - threshold) * min(arr.flatten())
+    return arr > threshold * max(arr.flatten()) + (1 - threshold) * min(
+        arr.flatten())
 
 
 def _center(arr, newshape):
