@@ -8,13 +8,20 @@ def rounded_square(
     declared_mls: float,
     angle: float = 0,
     center: Tuple[float, float] = (0, 0)) -> np.ndarray:
-    '''
-    phys_size: array or list with 2 elements that describe the physical size of the design pattern
-    resolution: number of points per unit length
-    declared_mls: declared minimum length scale
-    center: array or list with 2 elements that describe the center position of the square
-    angle: angle of rotation, in degree
-    '''
+    """
+    Return a Boolean array where all True elements form a square with rounded corners.
+
+    Args:
+        resolution: A float that represents the number of points per unit length.
+        phys_size: A tuple with two elements that describe the physical size of the entire pattern.
+        declared_mls: A float that represents the declared minimum length scale, which is equal to the diameter of round corners.
+        center: A tuple with two elements that describe the coordinates of the center of the square.
+        angle: A float that represents the angle of rotation in degree.
+
+    Returns:
+        An array with Boolean elements. 
+    """
+
     phys_size = np.array(phys_size)
     angle = np.radians(angle)
 
@@ -61,13 +68,19 @@ def disc(resolution: float,
          phys_size: Tuple[float, float],
          diameter: float,
          center: Tuple[float, float] = (0, 0)) -> np.ndarray:
-    '''
-    phys_size: array or list with 2 elements that describe the physical size of the design pattern
-    resolution: number of points per unit length
-    declared_mls: declared minimum length scale
-    center: array or list with 2 elements that describe the center position of the square
-    angle: angle of rotation, in degree
-    '''
+    """
+    Return a Boolean array where all True elements form a disc.
+
+    Args:
+        resolution: A float that represents the number of points per unit length.
+        phys_size: A tuple with two elements that describe the physical size of the entire pattern.
+        diameter: A float that represents the diameter of the disc.
+        center: A tuple with two elements that describe the coordinates of the center of the square.
+
+    Returns:
+        An array with Boolean elements. 
+    """
+
     phys_size = np.array(phys_size)
     grid_size = phys_size - 1 / resolution
     n = np.round(phys_size * resolution).astype(int)

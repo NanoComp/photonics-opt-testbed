@@ -4,11 +4,11 @@ from typing import Tuple, Optional
 threshold = 0.5  # threshold for binarization
 
 
-def solid_minimum_length(
-        arr: np.ndarray,
-        phys_size: Optional[Tuple[float, ...]] = None,
-        margin_size: Optional[Tuple[Tuple[float, float],
-                                    ...]] = None) -> float:
+def solid_minimum_length(arr: np.ndarray,
+                         phys_size: Optional[Tuple[float, ...]] = None,
+                         margin_size: Optional[Tuple[Tuple[float, float],
+                                                     ...]] = None,
+                         pad_mode: str = 'solid') -> float:
     """
     Compute the minimum length scale of solid regions in a design pattern.
 
@@ -16,6 +16,7 @@ def solid_minimum_length(
         arr: A 1d, 2d, or 3d array that represents a design pattern.
         phys_size: A tuple that represents the physical size of the design pattern.
         margin_size: A tuple that represents the physical size near edges that need to be disregarded.
+        pad_mode: A string that represents the padding mode, which can be 'solid', 'void', or 'edge'.
 
     Returns:
         A float that represents the minimum length scale of solid regions in the design pattern. The unit is the same as that of `phys_size`. If `phys_size` is None, return the minimum length scale in the number of pixels.
@@ -23,9 +24,12 @@ def solid_minimum_length(
 
     arr, pixel_size, short_pixel_side, short_entire_side = _ruler_initialize(
         arr, phys_size)
-    """
-    If all elements in the array are the same, the code simply regards the shorter side of the entire pattern as the minimum length scale, regardless of whether the pattern is solid or void.
-    """
+
+    # If all elements in the array are the same,
+    # the code simply regards the shorter side of
+    # the entire pattern as the minimum length scale,
+    # regardless of whether the pattern is solid or void.
+
     if len(np.unique(arr)) == 1:
         return short_entire_side
 
@@ -46,8 +50,8 @@ def solid_minimum_length(
         Returns:
             A boolean that indicates whether the difference between the design pattern and its opening happens at the interior of solid regions, with the edge regions specified by `margin_size` disregarded.
         """
-        open_diff = heaviside_open(arr, diameter, pixel_size) ^ arr
-        interior = arr ^ _get_border(arr, direction="in")
+        open_diff = heaviside_open(arr, diameter, pixel_size, pad_mode) ^ arr
+        interior = arr ^ _get_border(arr, direction='in')
         interior_diff = open_diff & interior
         if margin_size != None:
             interior_diff = _trim(interior_diff, margin_size, pixel_size)
@@ -60,11 +64,11 @@ def solid_minimum_length(
     return min_len
 
 
-def void_minimum_length(
-        arr: np.ndarray,
-        phys_size: Optional[Tuple[float, ...]] = None,
-        margin_size: Optional[Tuple[Tuple[float, float],
-                                    ...]] = None) -> float:
+def void_minimum_length(arr: np.ndarray,
+                        phys_size: Optional[Tuple[float, ...]] = None,
+                        margin_size: Optional[Tuple[Tuple[float, float],
+                                                    ...]] = None,
+                        pad_mode: str = 'void') -> float:
     """
     Compute the minimum length scale of void regions in a design pattern.
 
@@ -72,6 +76,7 @@ def void_minimum_length(
         arr: A 1d, 2d, or 3d array that represents a design pattern.
         phys_size: A tuple that represents the physical size of the design pattern.
         margin_size: A tuple that represents the physical size near edges that need to be disregarded.
+        pad_mode: A string that represents the padding mode, which can be 'solid', 'void', or 'edge'.
 
     Returns:
         A float that represents the minimum length scale of void regions in the design pattern. The unit is the same as that of `phys_size`. If `phys_size` is None, return the minimum length scale in the number of pixels.
@@ -79,13 +84,18 @@ def void_minimum_length(
 
     arr, pixel_size, short_pixel_side, short_entire_side = _ruler_initialize(
         arr, phys_size)
-    return solid_minimum_length(~arr, phys_size, margin_size)
+    if pad_mode == 'solid': pad_mode = 'void'
+    elif pad_mode == 'void': pad_mode = 'solid'
+    else: pad_mode == 'edge'
+
+    return solid_minimum_length(~arr, phys_size, margin_size, pad_mode)
 
 
 def both_minimum_length(
     arr: np.ndarray,
     phys_size: Optional[Tuple[float, ...]] = None,
-    margin_size: Optional[Tuple[Tuple[float, float], ...]] = None
+    margin_size: Optional[Tuple[Tuple[float, float], ...]] = None,
+    pad_mode: Tuple[str, str] = ('solid', 'void')
 ) -> Tuple[float, float]:
     """
     Compute the minimum length scales of both solid and void regions in a design pattern.
@@ -94,21 +104,23 @@ def both_minimum_length(
         arr: A 1d, 2d, or 3d array that represents a design pattern.
         phys_size: A tuple that represents the physical size of the design pattern.
         margin_size: A tuple that represents the physical size near edges that need to be disregarded.
+        pad_mode: A tuple of two strings that represent the padding modes for measuring solid and void minimum length scales, respectively.
 
     Returns:
         A tuple of two floats that represent the minimum length scales of solid and void regions, respectively. The unit is the same as that of `phys_size`. If `phys_size` is None, return the minimum length scale in the number of pixels.
     """
 
-    return solid_minimum_length(arr, phys_size,
-                                margin_size), void_minimum_length(
-                                    arr, phys_size, margin_size)
+    return solid_minimum_length(arr, phys_size, margin_size,
+                                pad_mode[0]), void_minimum_length(
+                                    arr, phys_size, margin_size, pad_mode[1])
 
 
 def dual_minimum_length(
-        arr: np.ndarray,
-        phys_size: Optional[Tuple[float, ...]] = None,
-        margin_size: Optional[Tuple[Tuple[float, float],
-                                    ...]] = None) -> float:
+    arr: np.ndarray,
+    phys_size: Optional[Tuple[float, ...]] = None,
+    margin_size: Optional[Tuple[Tuple[float, float], ...]] = None,
+    pad_mode: Tuple[str, str] = ('solid', 'void')
+) -> float:
     """
     For 2d or 3d design patterns, compute the minimum length scale through the difference between morphological opening and closing.
     Ideally, the result should be equal to the smaller one between solid and void minimum length scales.
@@ -118,6 +130,7 @@ def dual_minimum_length(
         arr: A 1d, 2d, or 3d array that represents a design pattern.
         phys_size: A tuple that represents the physical size of the design pattern.
         margin_size: A tuple that represents the physical size near edges that need to be disregarded.
+        pad_mode: A tuple of two strings that represent the padding modes for morphological opening nad closing, respectively.
 
     Returns:
         A float that represents the minimum length scale in the design pattern. The unit is the same as that of `phys_size`. If `phys_size` is None, return the minimum length scale in the number of pixels.
@@ -125,11 +138,12 @@ def dual_minimum_length(
 
     arr, pixel_size, short_pixel_side, short_entire_side = _ruler_initialize(
         arr, phys_size)
-    """
-    If all elements in the array are the same,
-    the code simply regards the shorter side of the entire pattern as the minimum length scale,
-    regardless of whether the pattern is solid or void.
-    """
+
+    # If all elements in the array are the same,
+    # the code simply regards the shorter side of
+    # the entire pattern as the minimum length scale,
+    # regardless of whether the pattern is solid or void.
+
     if len(np.unique(arr)) == 1:
         return short_entire_side
 
@@ -149,9 +163,11 @@ def dual_minimum_length(
         Returns:
             A boolean that indicates whether the difference between opening and closing happens at the regions that exclude the borders between solid and void regions, with the edge regions specified by `margin_size` disregarded.
         """
-        closing = heaviside_close(arr, diameter, pixel_size)
-        close_open_diff = heaviside_open(arr, diameter, pixel_size) ^ closing
-        interior = closing ^ _get_border(arr, direction="both")
+
+        closing = heaviside_close(arr, diameter, pixel_size, pad_mode[1])
+        close_open_diff = heaviside_open(arr, diameter, pixel_size,
+                                         pad_mode[0]) ^ closing
+        interior = closing ^ _get_border(arr, direction='both')
         interior_diff = close_open_diff & interior
         if margin_size != None:
             interior_diff = _trim(interior_diff, margin_size, pixel_size)
@@ -342,13 +358,14 @@ def _kernel_pad(arr, pad_to):
     return out
 
 
-def _convolution(arr, kernel):
+def _convolution(arr, kernel, pad_mode='edge'):
     """
     Convolution between the kernel and the input array.
 
     Args:
         arr: A 2d or 3d array that represents a design pattern.
         kernel: A portion of the kernel in the function cylindrical_filter.
+        pad_mode: A string that represents the padding mode, which can be 'solid', 'void', or 'edge'.
 
     Returns:
         An array that has the same dimension as the input array but has a larger size due to padding.
@@ -358,7 +375,16 @@ def _convolution(arr, kernel):
     npad = *((s, s) for s in arr_sh + ker_sh),
 
     # pad the kernel and the input array to avoid circular convolution and to ensure boundary conditions
-    arr = np.pad(arr, pad_width=npad, mode='edge')
+    if pad_mode == 'edge':
+        arr = np.pad(arr, pad_width=npad, mode='edge')
+    elif pad_mode == 'solid':
+        arr = np.pad(arr, pad_width=npad, constant_values=1)
+    elif pad_mode == 'void':
+        arr = np.pad(arr, pad_width=npad, constant_values=0)
+    else:
+        raise AssertionError(
+            "The padding mode should be 'solid', 'void', or 'edge'.")
+
     kernel = _kernel_pad(kernel, arr_sh * 3 + ker_sh * 2)
     kernel = np.squeeze(kernel) / np.sum(kernel)  # normalize the kernel
 
@@ -371,7 +397,7 @@ def _convolution(arr, kernel):
     )  # padding is not totally removed at this stage in case of unwanted influence from boundaries
 
 
-def _cylindrical_filter(arr, diameter, pixel_size):
+def _cylindrical_filter(arr, diameter, pixel_size, pad_mode='edge'):
     """
     Cylindrical filter.
 
@@ -379,6 +405,7 @@ def _cylindrical_filter(arr, diameter, pixel_size):
         arr: A 2d or 3d array that represents a design pattern.
         diameter: A positive float that represents the diameter of the cylindrical filter.
         pixel_size: A tuple that represents the physical size of one pixel in the design pattern.
+        pad_mode: A string that represents the padding mode, which can be 'solid', 'void', or 'edge'.
 
     Returns:
         An array of floats.
@@ -408,12 +435,13 @@ def _cylindrical_filter(arr, diameter, pixel_size):
     else:
         raise AssertionError("Only 2d or 3d is supported.")
 
-    return _convolution(arr, kernel)
+    return _convolution(arr, kernel, pad_mode)
 
 
 def _heaviside_erode(arr: np.ndarray,
                      diameter: float,
                      pixel_size: Tuple[float, ...],
+                     pad_mode='edge',
                      proj_strength: float = 1e6) -> np.ndarray:
     """
     Heaviside erosion.
@@ -422,13 +450,14 @@ def _heaviside_erode(arr: np.ndarray,
         arr: A 2d or 3d array that represents a design pattern.
         diameter: A positive float that represents the diameter of the structuring element.
         pixel_size: A tuple that represents the physical size of one pixel in the design pattern.
+        pad_mode: A string that represents the padding mode, which can be 'solid', 'void', or 'edge'.
         proj_strength: A float that represents the projection strength relevant to binarization.
 
     Returns:
         A Boolean array that has a larger size than the input array due to padding.
     """
 
-    filtered = _cylindrical_filter(arr, diameter, pixel_size)
+    filtered = _cylindrical_filter(arr, diameter, pixel_size, pad_mode)
     projected = np.exp(
         -proj_strength *
         (1 - filtered)) + np.exp(-proj_strength) * (1 - filtered)
@@ -438,6 +467,7 @@ def _heaviside_erode(arr: np.ndarray,
 def _heaviside_dilate(arr: np.ndarray,
                       diameter: float,
                       pixel_size: Tuple[float, ...],
+                      pad_mode='edge',
                       proj_strength: float = 1e6) -> np.ndarray:
     """
     Heaviside dilation.
@@ -446,12 +476,13 @@ def _heaviside_dilate(arr: np.ndarray,
         arr: A 2d or 3d array that represents a design pattern.
         diameter: A positive float that represents the diameter of the structuring element.
         pixel_size: A tuple that represents the physical size of one pixel in the design pattern.
+        pad_mode: A string that represents the padding mode, which can be 'solid', 'void', or 'edge'.
         proj_strength: A float that represents the projection strength relevant to binarization.
 
     Returns:
         A Boolean array that has a larger size than the input array due to padding.
     """
-    filtered = _cylindrical_filter(arr, diameter, pixel_size)
+    filtered = _cylindrical_filter(arr, diameter, pixel_size, pad_mode)
     projected = 1 - np.exp(
         -proj_strength * filtered) + np.exp(-proj_strength) * filtered
     return projected > threshold  # convert the result to a Boolean array
@@ -460,6 +491,7 @@ def _heaviside_dilate(arr: np.ndarray,
 def heaviside_open(arr: np.ndarray,
                    diameter: float,
                    pixel_size: Tuple[float, ...],
+                   pad_mode='edge',
                    proj_strength: float = 1e6) -> np.ndarray:
     """
     Heaviside opening, which is erosion followed by dilation.
@@ -468,20 +500,22 @@ def heaviside_open(arr: np.ndarray,
         arr: A 2d or 3d array that represents a design pattern.
         diameter: A positive float that represents the diameter of the structuring element.
         pixel_size: A tuple that represents the physical size of one pixel in the design pattern.
+        pad_mode: A string that represents the padding mode, which can be 'solid', 'void', or 'edge'.
         proj_strength: A float that represents the projection strength relevant to binarization.
 
     Returns:
         A Boolean array that has the same size as the input array.
     """
 
-    he = _heaviside_erode(arr, diameter, pixel_size, proj_strength)
-    hdhe = _heaviside_dilate(he, diameter, pixel_size, proj_strength)
+    he = _heaviside_erode(arr, diameter, pixel_size, pad_mode, proj_strength)
+    hdhe = _heaviside_dilate(he, diameter, pixel_size, pad_mode, proj_strength)
     return _center(hdhe, arr.shape)  # remove padding
 
 
 def heaviside_close(arr: np.ndarray,
                     diameter: float,
                     pixel_size: Tuple[float, ...],
+                    pad_mode='edge',
                     proj_strength: float = 1e6) -> np.ndarray:
     """
     Heaviside closing, which is dilation followed by erosion.
@@ -490,44 +524,45 @@ def heaviside_close(arr: np.ndarray,
         arr: A 2d or 3d array that represents a design pattern.
         diameter: A positive float that represents the diameter of the structuring element.
         pixel_size: A tuple that represents the physical size of one pixel in the design pattern.
+        pad_mode: A string that represents the padding mode, which can be 'solid', 'void', or 'edge'.
         proj_strength: A float that represents the projection strength relevant to binarization.
 
     Returns:
         A Boolean array that has the same size as the input array.
     """
 
-    hd = _heaviside_dilate(arr, diameter, pixel_size, proj_strength)
-    hehd = _heaviside_erode(hd, diameter, pixel_size, proj_strength)
+    hd = _heaviside_dilate(arr, diameter, pixel_size, pad_mode, proj_strength)
+    hehd = _heaviside_erode(hd, diameter, pixel_size, pad_mode, proj_strength)
     return _center(hehd, arr.shape)  # remove padding
 
 
-def _get_border(arr, direction="in"):
+def _get_border(arr, direction='in'):
     """
     Get inner borders, outer borders, or union of both inner and outer borders of solid regions.
 
     Args:
         arr: A 2d or 3d array that represents a design pattern.
-        direction: A string that can be "in", "out", or "both" to indicate inner borders, outer borders, and union of inner and outer borders.
+        direction: A string that can be 'in', 'out', or 'both' to indicate inner borders, outer borders, and union of inner and outer borders.
 
     Returns:
         A Boolean array in which all True elements are at and only at borders.
 
     Raises:
-        AssertionError: If the option provided to `direction` is not "in", "out", or "both".
+        AssertionError: If the option provided to `direction` is not 'in', 'out', or 'both'.
     """
 
     pixel_size = (1, ) * arr.ndim
     diameter = 2.01  # With this pixel size and diameter, the resulting structuring element has the shape of a plus sign.
 
-    if direction == "in":  # inner borders of solid regions
+    if direction == 'in':  # inner borders of solid regions
         eroded = _heaviside_erode(arr, diameter, pixel_size)
         eroded = _center(eroded, arr.shape)
         return eroded ^ arr
-    elif direction == "out":  # outer borders of solid regions
+    elif direction == 'out':  # outer borders of solid regions
         dilated = _heaviside_dilate(arr, diameter, pixel_size)
         eroded = _center(dilated, arr.shape)
         return dilated ^ arr
-    elif direction == "both":  # union of inner and outer borders of solid regions
+    elif direction == 'both':  # union of inner and outer borders of solid regions
         eroded = _heaviside_erode(arr, diameter, pixel_size)
         dilated = _heaviside_dilate(arr, diameter, pixel_size)
         return _center(dilated ^ eroded, arr.shape)
