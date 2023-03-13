@@ -1,4 +1,5 @@
 import numpy as np
+import cv2 as cv
 from typing import Tuple, Optional
 
 threshold = 0.5  # threshold for binarization
@@ -44,21 +45,21 @@ def solid_minimum_length(arr: np.ndarray,
         Evaluate whether a design pattern violates a certain length scale.
 
         Args:
-            diameter: A float that represents the diameter of the structuring element, which acts like a probe.
+            diameter: A float that represents the diameter of the kernel, which acts like a probe.
             arr: A 2d or 3d array that represents a design pattern.
 
         Returns:
             A boolean that indicates whether the difference between the design pattern and its opening happens at the interior of solid regions, with the edge regions specified by `margin_size` disregarded.
         """
-        open_diff = heaviside_open(arr, diameter, pixel_size, pad_mode) ^ arr
-        interior = arr ^ _get_border(arr, direction='in')
-        interior_diff = open_diff & interior
+        open_diff = binary_open(arr, diameter, pixel_size, pad_mode) ^ arr
+        interior_diff = open_diff & _get_interior(
+            arr, direction="in", pad_mode=pad_mode)
         if margin_size != None:
             interior_diff = _trim(interior_diff, margin_size, pixel_size)
         return interior_diff.any()
 
     min_len, _ = _search([short_pixel_side, short_entire_side],
-                         min(pixel_size),
+                         min(pixel_size) / 2,
                          lambda d: _interior_pixel_number(d, arr))
 
     return min_len
@@ -148,33 +149,36 @@ def dual_minimum_length(
         return short_entire_side
 
     if arr.ndim == 1:
-        arr = arr[margin_number[0, 0]:len(arr) - margin_number[0, 1]]
+        if margin_size != None:
+            arr = _trim(arr, margin_size, pixel_size)
         solid_min_length, void_min_length = _minimum_length_1d(arr)
         return min(solid_min_length, void_min_length) * short_pixel_side
+
+    if isinstance(pad_mode, str): pad_mode = (pad_mode, pad_mode)
 
     def _interior_pixel_number(diameter, arr):
         """
         Evaluate whether a design pattern violates a certain length scale.
 
         Args:
-            diameter: A float that represents the diameter of the structuring element, which acts like a probe.
+            diameter: A float that represents the diameter of the kernel, which acts like a probe.
             arr: A 2d or 3d array that represents a design pattern.
 
         Returns:
             A boolean that indicates whether the difference between opening and closing happens at the regions that exclude the borders between solid and void regions, with the edge regions specified by `margin_size` disregarded.
         """
 
-        closing = heaviside_close(arr, diameter, pixel_size, pad_mode[1])
-        close_open_diff = heaviside_open(arr, diameter, pixel_size,
-                                         pad_mode[0]) ^ closing
-        interior = closing ^ _get_border(arr, direction='both')
-        interior_diff = close_open_diff & interior
+        closing = binary_close(arr, diameter, pixel_size, pad_mode[1])
+        close_open_diff = binary_open(arr, diameter, pixel_size,
+                                      pad_mode[0]) ^ closing
+        interior_diff = close_open_diff & _get_interior(
+            arr, direction="both", pad_mode=pad_mode)
         if margin_size != None:
             interior_diff = _trim(interior_diff, margin_size, pixel_size)
         return interior_diff.any()
 
     min_len, _ = _search([short_pixel_side, short_entire_side],
-                         min(pixel_size),
+                         min(pixel_size) / 2,
                          lambda d: _interior_pixel_number(d, arr))
 
     return min_len
@@ -197,15 +201,15 @@ def _ruler_initialize(arr, phys_size):
 
     arr = np.squeeze(arr)
 
-    if phys_size == None:
-        phys_size = arr.shape
-    elif isinstance(phys_size, np.ndarray) or isinstance(
+    if isinstance(phys_size, np.ndarray) or isinstance(
             phys_size, list) or isinstance(phys_size, tuple):
         phys_size = np.squeeze(phys_size)
         phys_size = phys_size[
             phys_size.nonzero()]  # keep nonzero elements only
     elif isinstance(phys_size, float) or isinstance(phys_size, int):
         phys_size = np.array([phys_size])
+    elif phys_size == None:
+        phys_size = arr.shape
     else:
         AssertionError("Invalid format of the physical size.")
 
@@ -232,7 +236,7 @@ def _search(arg_range, arg_threshold, function):
         function: A function that returns True if the viariable is large enough but False if the variable is not large enough.
 
     Returns:
-        A tuple with two elements. The first is a float that represents the search result. The second is a Boolean, which is True if the search indeed happens, False if the condition of starting search is not satisfied in the beginning.
+        A tuple with two elements. The first is a float that represents the search result. The second is a Boolean, which is True if the search indeed happens, False if the condition for starting search is not satisfied in the beginning.
 
     Raises:
         AssertionError: If `function` returns True at a smaller input viariable but False at a larger input viariable.
@@ -252,9 +256,9 @@ def _search(arg_range, arg_threshold, function):
             else:
                 args[1], args[2] = (arg +
                                     args[0]) / 2, arg  # radius is still large
-        return args[2], True
+        return args[1], True  #args[2], True
     elif not function(args[0]) and not function(args[2]):
-        return args[2], False
+        return args[2], False  #args[2], False
     elif function(args[0]) and function(args[2]):
         return args[0], False
     else:
@@ -299,250 +303,13 @@ def _minimum_length_1d(arr):
     return solid_min_length, void_min_length
 
 
-def _kernel_pad(arr, pad_to):
-    """
-    Complete the kernel and pad it to the given size.
-
-    Args:
-        arr: A 2d or 3d array that represents roughly a quarter of the complete kernel.
-        pad_to: An array that represents the size to be padded to, which must have the same shape as arr and contain integers only.
-        
-    Returns:
-        A 2d or 3d padded array.
-
-    Raises:
-        AssertionError: If the input array is not 2d or 3d. 
-    """
-    pad_size = pad_to - 2 * np.array(arr.shape) + 1
-
-    if arr.ndim == 2:
-        out = np.concatenate(
-            (np.concatenate((arr, np.zeros(
-                (pad_size[0], arr.shape[1])), np.flipud(
-                    arr[1:, :]))), np.zeros((pad_to[0], pad_size[1])),
-             np.concatenate((np.fliplr(
-                 arr[:, 1:]), np.zeros(
-                     (pad_size[0], arr.shape[1] - 1)), np.flip(arr[1:, 1:])))),
-            axis=1)
-    elif arr.ndim == 3:
-        upper = np.concatenate(
-            (np.concatenate(
-                (arr, np.zeros((pad_size[0], arr.shape[1], arr.shape[2])),
-                 np.flip(arr[1:, :, :],
-                         0))), np.zeros(
-                             (pad_to[0], pad_size[1], arr.shape[2])),
-             np.concatenate(
-                 (np.flip(arr[:, 1:, :], 1),
-                  np.zeros((pad_size[0], arr.shape[1] - 1, arr.shape[2])),
-                  np.flip(arr[1:, 1:, :], (0, 1))))),
-            axis=1)
-        middle = np.zeros((pad_to[0], pad_to[1], pad_size[2]))
-        lower = np.concatenate(
-            (np.concatenate(
-                (np.flip(arr[:, :, 1:], 2),
-                 np.zeros((pad_size[0], arr.shape[1], arr.shape[2] - 1)),
-                 np.flip(arr[1:, :, 1:], (0, 2)))),
-             np.zeros((pad_to[0], pad_size[1], arr.shape[2] - 1)),
-             np.concatenate(
-                 (np.flip(arr[:, 1:, 1:], (1, 2)),
-                  np.zeros((pad_size[0], arr.shape[1] - 1, arr.shape[2] - 1)),
-                  np.flip(arr[1:, 1:, 1:])))),
-            axis=1)
-
-        out = np.concatenate((upper, middle, lower), axis=2)
-    else:
-        raise AssertionError(
-            "The function is not implemented for so many or so few dimensions."
-        )
-
-    return out
-
-
-def _convolution(arr, kernel, pad_mode='edge'):
-    """
-    Convolution between the kernel and the input array.
-
-    Args:
-        arr: A 2d or 3d array that represents a design pattern.
-        kernel: A portion of the kernel in the function cylindrical_filter.
-        pad_mode: A string that represents the padding mode, which can be 'solid', 'void', or 'edge'.
-
-    Returns:
-        An array that has the same dimension as the input array but has a larger size due to padding.
-    """
-    arr_sh = np.array(arr.shape)
-    ker_sh = np.array(kernel.shape)
-    npad = *((s, s) for s in arr_sh + ker_sh),
-
-    # pad the kernel and the input array to avoid circular convolution and to ensure boundary conditions
-    if pad_mode == 'edge':
-        arr = np.pad(arr, pad_width=npad, mode='edge')
-    elif pad_mode == 'solid':
-        arr = np.pad(arr, pad_width=npad, constant_values=1)
-    elif pad_mode == 'void':
-        arr = np.pad(arr, pad_width=npad, constant_values=0)
-    else:
-        raise AssertionError(
-            "The padding mode should be 'solid', 'void', or 'edge'.")
-
-    kernel = _kernel_pad(kernel, arr_sh * 3 + ker_sh * 2)
-    kernel = np.squeeze(kernel) / np.sum(kernel)  # normalize the kernel
-
-    K, A = np.fft.fftn(kernel), np.fft.fftn(
-        arr)  # transform to frequency domain for fast convolution
-    arr_out = np.real(np.fft.ifftn(K * A))  # convolution
-
-    return _center(
-        arr_out, arr_sh + ker_sh * 2
-    )  # padding is not totally removed at this stage in case of unwanted influence from boundaries
-
-
-def _cylindrical_filter(arr, diameter, pixel_size, pad_mode='edge'):
-    """
-    Cylindrical filter.
-
-    Args:
-        arr: A 2d or 3d array that represents a design pattern.
-        diameter: A positive float that represents the diameter of the cylindrical filter.
-        pixel_size: A tuple that represents the physical size of one pixel in the design pattern.
-        pad_mode: A string that represents the padding mode, which can be 'solid', 'void', or 'edge'.
-
-    Returns:
-        An array of floats.
-
-    Raises:
-        AssertionError: If the input array is not 2d or 3d, or if the pixel size and the dimension of the input array do not match.
-    """
-
-    assert arr.ndim == len(
-        pixel_size
-    ), 'The pixel size and the dimension of the input array do not match.'
-
-    x_tick = np.arange(0, diameter / 2, pixel_size[0])
-    y_tick = np.arange(0, diameter / 2, pixel_size[1])
-
-    if len(pixel_size) == 2:
-        X, Y = np.meshgrid(x_tick, y_tick, sparse=True, indexing='ij')
-        kernel = X**2 + Y**2 < diameter**2 / 4
-    elif len(pixel_size) == 3:
-        z_tick = np.arange(0, diameter / 2, pixel_size[2])
-        X, Y, Z = np.meshgrid(x_tick,
-                              y_tick,
-                              z_tick,
-                              sparse=True,
-                              indexing='ij')
-        kernel = X**2 + Y**2 + Z**2 < diameter**2 / 4
-    else:
-        raise AssertionError("Only 2d or 3d is supported.")
-
-    return _convolution(arr, kernel, pad_mode)
-
-
-def _heaviside_erode(arr: np.ndarray,
-                     diameter: float,
-                     pixel_size: Tuple[float, ...],
-                     pad_mode='edge',
-                     proj_strength: float = 1e6) -> np.ndarray:
-    """
-    Heaviside erosion.
-
-    Args:
-        arr: A 2d or 3d array that represents a design pattern.
-        diameter: A positive float that represents the diameter of the structuring element.
-        pixel_size: A tuple that represents the physical size of one pixel in the design pattern.
-        pad_mode: A string that represents the padding mode, which can be 'solid', 'void', or 'edge'.
-        proj_strength: A float that represents the projection strength relevant to binarization.
-
-    Returns:
-        A Boolean array that has a larger size than the input array due to padding.
-    """
-
-    filtered = _cylindrical_filter(arr, diameter, pixel_size, pad_mode)
-    projected = np.exp(
-        -proj_strength *
-        (1 - filtered)) + np.exp(-proj_strength) * (1 - filtered)
-    return projected > threshold  # convert to a Boolean array
-
-
-def _heaviside_dilate(arr: np.ndarray,
-                      diameter: float,
-                      pixel_size: Tuple[float, ...],
-                      pad_mode='edge',
-                      proj_strength: float = 1e6) -> np.ndarray:
-    """
-    Heaviside dilation.
-
-    Args:
-        arr: A 2d or 3d array that represents a design pattern.
-        diameter: A positive float that represents the diameter of the structuring element.
-        pixel_size: A tuple that represents the physical size of one pixel in the design pattern.
-        pad_mode: A string that represents the padding mode, which can be 'solid', 'void', or 'edge'.
-        proj_strength: A float that represents the projection strength relevant to binarization.
-
-    Returns:
-        A Boolean array that has a larger size than the input array due to padding.
-    """
-    filtered = _cylindrical_filter(arr, diameter, pixel_size, pad_mode)
-    projected = 1 - np.exp(
-        -proj_strength * filtered) + np.exp(-proj_strength) * filtered
-    return projected > threshold  # convert the result to a Boolean array
-
-
-def heaviside_open(arr: np.ndarray,
-                   diameter: float,
-                   pixel_size: Tuple[float, ...],
-                   pad_mode='edge',
-                   proj_strength: float = 1e6) -> np.ndarray:
-    """
-    Heaviside opening, which is erosion followed by dilation.
-
-    Args:
-        arr: A 2d or 3d array that represents a design pattern.
-        diameter: A positive float that represents the diameter of the structuring element.
-        pixel_size: A tuple that represents the physical size of one pixel in the design pattern.
-        pad_mode: A string that represents the padding mode, which can be 'solid', 'void', or 'edge'.
-        proj_strength: A float that represents the projection strength relevant to binarization.
-
-    Returns:
-        A Boolean array that has the same size as the input array.
-    """
-
-    he = _heaviside_erode(arr, diameter, pixel_size, pad_mode, proj_strength)
-    hdhe = _heaviside_dilate(he, diameter, pixel_size, pad_mode, proj_strength)
-    return _center(hdhe, arr.shape)  # remove padding
-
-
-def heaviside_close(arr: np.ndarray,
-                    diameter: float,
-                    pixel_size: Tuple[float, ...],
-                    pad_mode='edge',
-                    proj_strength: float = 1e6) -> np.ndarray:
-    """
-    Heaviside closing, which is dilation followed by erosion.
-
-    Args:
-        arr: A 2d or 3d array that represents a design pattern.
-        diameter: A positive float that represents the diameter of the structuring element.
-        pixel_size: A tuple that represents the physical size of one pixel in the design pattern.
-        pad_mode: A string that represents the padding mode, which can be 'solid', 'void', or 'edge'.
-        proj_strength: A float that represents the projection strength relevant to binarization.
-
-    Returns:
-        A Boolean array that has the same size as the input array.
-    """
-
-    hd = _heaviside_dilate(arr, diameter, pixel_size, pad_mode, proj_strength)
-    hehd = _heaviside_erode(hd, diameter, pixel_size, pad_mode, proj_strength)
-    return _center(hehd, arr.shape)  # remove padding
-
-
-def _get_border(arr, direction='in'):
+def _get_interior(arr, direction, pad_mode):
     """
     Get inner borders, outer borders, or union of both inner and outer borders of solid regions.
 
     Args:
         arr: A 2d or 3d array that represents a design pattern.
-        direction: A string that can be 'in', 'out', or 'both' to indicate inner borders, outer borders, and union of inner and outer borders.
+        direction: A string that can be "in", "out", or "both" to indicate inner borders, outer borders, and union of inner and outer borders.
 
     Returns:
         A Boolean array in which all True elements are at and only at borders.
@@ -552,23 +319,252 @@ def _get_border(arr, direction='in'):
     """
 
     pixel_size = (1, ) * arr.ndim
-    diameter = 2.01  # With this pixel size and diameter, the resulting structuring element has the shape of a plus sign.
+    diameter = 2.8  # With this pixel size and diameter, the resulting kernel has the shape of a plus sign.
 
-    if direction == 'in':  # inner borders of solid regions
-        eroded = _heaviside_erode(arr, diameter, pixel_size)
-        eroded = _center(eroded, arr.shape)
-        return eroded ^ arr
-    elif direction == 'out':  # outer borders of solid regions
-        dilated = _heaviside_dilate(arr, diameter, pixel_size)
-        eroded = _center(dilated, arr.shape)
-        return dilated ^ arr
-    elif direction == 'both':  # union of inner and outer borders of solid regions
-        eroded = _heaviside_erode(arr, diameter, pixel_size)
-        dilated = _heaviside_dilate(arr, diameter, pixel_size)
-        return _center(dilated ^ eroded, arr.shape)
+    if direction == 'in':  # interior of solid regions
+        return binary_erode(arr, diameter, pixel_size, pad_mode)
+    elif direction == 'out':  # interior of void regions
+        return ~binary_dilate(arr, diameter, pixel_size, pad_mode)
+    elif direction == 'both':  # union of interiors of solid and void regions
+        eroded = binary_erode(arr, diameter, pixel_size, pad_mode[0])
+        dilated = binary_dilate(arr, diameter, pixel_size, pad_mode[1])
+        return ~dilated | eroded
     else:
         raise AssertionError(
             "The direction at the border can only be in, out, or both.")
+
+
+def _get_pixel_size(arr, phys_size):
+    """
+    Compute the physical size of a single pixel.
+
+    Args:
+        arr: An array that represents a design pattern.
+        phys_size: A tuple that represents the physical size of the design pattern.
+
+    Returns:
+        An array of floats. It represents the physical size of a single pixel.
+    """
+
+    squeeze_shape = np.array(np.squeeze(arr).shape)
+    return phys_size / squeeze_shape  # sizes of a pixel along all finite-thickness directions
+
+
+def _binarize(arr):
+    """
+    Binarize the input array according to the threshold.
+
+    Args:
+        arr: An array that represents a design pattern.
+
+    Returns:
+        An Boolean array.
+    """
+
+    return arr > threshold * max(arr.flatten()) + (1 - threshold) * min(
+        arr.flatten())
+
+
+def _get_kernel(diameter, pixel_size):
+    """
+    Get the kernel with a given diameter and pixel size.
+
+    Args:
+        diameter: A float that represents the diameter of the kernel, which acts like a probe.
+        pixel_size: A tuple, list, or array that represents the physical size of one pixel in the design pattern.
+
+    Returns:
+        An array of unsigned integers 0 and 1. It represent the kernel for morpological operations.
+    """
+
+    pixel_size = np.array(pixel_size)
+    se_shape = np.array(np.round(diameter / pixel_size), dtype=int)
+
+    if se_shape[0] <= 2 and se_shape[1] <= 2:
+        return np.ones(se_shape, dtype=np.uint8)
+
+    rounded_size = np.round(diameter / pixel_size - 1) * pixel_size
+
+    x_tick = np.linspace(-rounded_size[0] / 2, rounded_size[0] / 2,
+                         se_shape[0])
+    y_tick = np.linspace(-rounded_size[1] / 2, rounded_size[1] / 2,
+                         se_shape[1])
+
+    X, Y = np.meshgrid(x_tick, y_tick, sparse=True,
+                       indexing='ij')  # grid over the entire design region
+    structuring_element = X**2 + Y**2 <= diameter**2 / 4
+
+    return np.array(structuring_element, dtype=np.uint8)
+
+
+def binary_open(arr: np.ndarray,
+                diameter: float,
+                pixel_size: Tuple[float, float],
+                pad_mode: str = 'edge'):
+    """
+    Morphological opening.
+
+    Args:
+        arr: A binarized 2d array that represents a design pattern.
+        diameter: A float that represents the diameter of the kernel, which acts like a probe.
+        pixel_size: A tuple, list, or array that represents the physical size of one pixel in the design pattern.
+        pad_mode: A string that represents the padding mode, which can be 'solid', 'void', or 'edge'.
+
+    Returns:
+        A Boolean array that represents the outcome of morphological opening. 
+    """
+
+    kernel = _get_kernel(diameter, pixel_size)
+    arr = _proper_pad(arr, kernel, pad_mode)
+    opened = cv.morphologyEx(src=arr, kernel=kernel, op=cv.MORPH_OPEN)
+    return _proper_unpad(opened, kernel).astype(bool)
+
+
+def binary_close(arr: np.ndarray,
+                 diameter: float,
+                 pixel_size: Tuple[float, float],
+                 pad_mode: str = 'edge'):
+    """
+    Morphological closing.
+
+    Args:
+        arr: A binarized 2d array that represents a design pattern.
+        diameter: A float that represents the diameter of the kernel, which acts like a probe.
+        pixel_size: A tuple, list, or array that represents the physical size of one pixel in the design pattern.
+        pad_mode: A string that represents the padding mode, which can be 'solid', 'void', or 'edge'.
+
+    Returns:
+        A Boolean array that represents the outcome of morphological closing. 
+    """
+
+    kernel = _get_kernel(diameter, pixel_size)
+    arr = _proper_pad(arr, kernel, pad_mode)
+    closed = cv.morphologyEx(src=arr, kernel=kernel, op=cv.MORPH_CLOSE)
+    return _proper_unpad(closed, kernel).astype(bool)
+
+
+def binary_erode(arr: np.ndarray,
+                 diameter: float,
+                 pixel_size: Tuple[float, float],
+                 pad_mode: str = 'edge'):
+    """
+    Morphological erosion.
+
+    Args:
+        arr: A binarized 2d array that represents a design pattern.
+        diameter: A float that represents the diameter of the kernel, which acts like a probe.
+        pixel_size: A tuple, list, or array that represents the physical size of one pixel in the design pattern.
+        pad_mode: A string that represents the padding mode, which can be 'solid', 'void', or 'edge'.
+
+    Returns:
+        A Boolean array that represents the outcome of morphological erosion. 
+    """
+
+    kernel = _get_kernel(diameter, pixel_size)
+    arr = _proper_pad(arr, kernel, pad_mode)
+    eroded = cv.erode(arr, kernel)
+    return _proper_unpad(eroded, kernel).astype(bool)
+
+
+def binary_dilate(arr: np.ndarray,
+                  diameter: float,
+                  pixel_size: Tuple[float, float],
+                  pad_mode: str = 'edge'):
+    """
+    Morphological dilation.
+
+    Args:
+        arr: A binarized 2d array that represents a design pattern.
+        diameter: A float that represents the diameter of the kernel, which acts like a probe.
+        pixel_size: A tuple, list, or array that represents the physical size of one pixel in the design pattern.
+        pad_mode: A string that represents the padding mode, which can be 'solid', 'void', or 'edge'.
+
+    Returns:
+        A Boolean array that represents the outcome of morphological dilation. 
+    """
+
+    kernel = _get_kernel(diameter, pixel_size)
+    arr = _proper_pad(arr, kernel, pad_mode)
+    dilated = cv.dilate(arr, kernel)
+    return _proper_unpad(dilated, kernel).astype(bool)
+
+
+def _proper_pad(arr, kernel, pad_mode):
+    """
+    Pad the input array properly according to the size of the kernel.
+
+    Args:
+        arr: A binarized 2d array that represents a design pattern.
+        kernel: A 2d array that represents the kernel of morphological operations.
+        pad_mode: A string that represents the padding mode, which can be 'solid', 'void', or 'edge'.
+
+    Returns:
+        A padded array composed of unsigned integers 0 and 1.
+
+    Raises:
+        AssertionError: If `pad_mode` is not `solid`, `void`, or `edge`.
+    """
+
+    ((top, bottom), (left, right)) = ((kernel.shape[0], ) * 2,
+                                      (kernel.shape[1], ) * 2)
+
+    if pad_mode == 'edge':
+        return cv.copyMakeBorder(arr.view(np.uint8),
+                                 top=top,
+                                 bottom=bottom,
+                                 left=left,
+                                 right=right,
+                                 borderType=cv.BORDER_REPLICATE)
+    elif pad_mode == 'solid':
+        return cv.copyMakeBorder(arr.view(np.uint8),
+                                 top=top,
+                                 bottom=bottom,
+                                 left=left,
+                                 right=right,
+                                 borderType=cv.BORDER_CONSTANT,
+                                 value=1)
+    elif pad_mode == 'void':
+        return cv.copyMakeBorder(arr.view(np.uint8),
+                                 top=top,
+                                 bottom=bottom,
+                                 left=left,
+                                 right=right,
+                                 borderType=cv.BORDER_CONSTANT,
+                                 value=0)
+    else:
+        raise AssertionError(
+            "The padding mode should be 'solid', 'void', or 'edge'.")
+
+
+def _proper_unpad(arr, kernel):
+    """
+    Remove padding according to the size of the kernel. The code is copied from Martin F. Schubert's code at 
+    https://github.com/mfschubert/topology/blob/main/metrics.py
+
+    Args:
+        arr: A 2d array that has extra padding.
+        kernel: A 2d array that represents the kernel of morphological operations.
+
+    Returns:
+        A 2d array without padding.
+    """
+
+    unpad_width = (
+        (
+            kernel.shape[0] + (kernel.shape[0] + 1) % 2,
+            kernel.shape[0] - (kernel.shape[0] + 1) % 2,
+        ),
+        (
+            kernel.shape[1] + (kernel.shape[1] + 1) % 2,
+            kernel.shape[1] - (kernel.shape[1] + 1) % 2,
+        ),
+    )
+
+    slices = tuple([
+        slice(pad_lo, dim - pad_hi)
+        for (pad_lo, pad_hi), dim in zip(unpad_width, arr.shape)
+    ])
+    return arr[slices]
 
 
 def _trim(arr, margin_size, pixel_size):
@@ -608,59 +604,5 @@ def _trim(arr, margin_size, pixel_size):
     elif margin_dim == 2:
         return arr[margin_number[0][0]:-margin_number[0][1],
                    margin_number[1][0]:-margin_number[1][1]]
-    elif margin_dim == 3:
-        return arr[margin_number[0][0]:-margin_number[0][1],
-                   margin_number[1][0]:-margin_number[1][1],
-                   margin_number[2][0]:-margin_number[2][1]]
     else:
         AssertionError("The input array has too many dimensions.")
-
-
-def _get_pixel_size(arr, phys_size):
-    """
-    Compute the physical size of a single pixel.
-
-    Args:
-        arr: An array that represents a design pattern.
-        phys_size: A tuple that represents the physical size of the design pattern.
-
-    Returns:
-        An array that represents the physical size of a single pixel.
-    """
-    squeeze_shape = np.array(np.squeeze(arr).shape)
-    return phys_size / squeeze_shape  # sizes of a pixel along all finite-thickness directions
-
-
-def _binarize(arr):
-    """
-    Binarize the input array according to the threshold.
-
-    Args:
-        arr: An array that represents a design pattern.
-
-    Returns:
-        An Boolean array.
-    """
-    return arr > threshold * max(arr.flatten()) + (1 - threshold) * min(
-        arr.flatten())
-
-
-def _center(arr, newshape):
-    """
-    Obtain the center portion at an input array. The shape of the returned array is newshape. 
-    Borrowed from scipy:
-        https://github.com/scipy/scipy/blob/v1.4.1/scipy/signal/signaltools.py#L263-L270
-
-    Args:
-        arr: An input array.
-        newshape: A tuple that represents the shape of the desired center portion.
-
-    Returns:
-        An array with the shape specified newshape. This array is the center portion of the input array.
-    """
-    newshape = np.asarray(newshape)
-    currshape = np.array(arr.shape)
-    startind = (currshape - newshape) // 2
-    endind = startind + newshape
-    myslice = [slice(startind[k], endind[k]) for k in range(len(endind))]
-    return arr[tuple(myslice)]

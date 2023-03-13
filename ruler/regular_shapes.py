@@ -25,8 +25,8 @@ def rounded_square(
     phys_size = np.array(phys_size)
     angle = np.radians(angle)
 
-    grid_size = phys_size - 1 / resolution
-    n = np.round(phys_size * resolution).astype(int)
+    n = np.round(phys_size * resolution).astype(int) # number of pixels along each dimension
+    grid_size = (n - 1) / resolution  # size of the entire pattern formed by centers of pixels
 
     x_coord = np.linspace(-grid_size[0] / 2, grid_size[0] / 2, n[0])
     y_coord = np.linspace(-grid_size[1] / 2, grid_size[1] / 2, n[1])
