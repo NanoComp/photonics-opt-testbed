@@ -14,7 +14,7 @@ def minimum_length_solid(arr: np.ndarray,
     Compute the minimum length scale of solid regions in a design pattern.
 
     Args:
-        arr: A 1d, 2d, or 3d array that represents a design pattern.
+        arr: A 1d or 2d array that represents a design pattern.
         phys_size: A tuple that represents the physical size of the design pattern.
         margin_size: A tuple that represents the physical size near edges that need to be disregarded.
         pad_mode: A string that represents the padding mode, which can be 'solid', 'void', or 'edge'.
@@ -46,7 +46,7 @@ def minimum_length_solid(arr: np.ndarray,
 
         Args:
             diameter: A float that represents the diameter of the kernel, which acts like a probe.
-            arr: A 2d or 3d array that represents a design pattern.
+            arr: A 2d array that represents a design pattern.
 
         Returns:
             A boolean that indicates whether the difference between the design pattern and its opening happens at the interior of solid regions, with the edge regions specified by `margin_size` disregarded.
@@ -74,7 +74,7 @@ def minimum_length_void(arr: np.ndarray,
     Compute the minimum length scale of void regions in a design pattern.
 
     Args:
-        arr: A 1d, 2d, or 3d array that represents a design pattern.
+        arr: A 1d or 2d array that represents a design pattern.
         phys_size: A tuple that represents the physical size of the design pattern.
         margin_size: A tuple that represents the physical size near edges that need to be disregarded.
         pad_mode: A string that represents the padding mode, which can be 'solid', 'void', or 'edge'.
@@ -102,7 +102,7 @@ def minimum_length_solid_void(
     Compute the minimum length scales of both solid and void regions in a design pattern.
 
     Args:
-        arr: A 1d, 2d, or 3d array that represents a design pattern.
+        arr: A 1d or 2d array that represents a design pattern.
         phys_size: A tuple that represents the physical size of the design pattern.
         margin_size: A tuple that represents the physical size near edges that need to be disregarded.
         pad_mode: A tuple of two strings that represent the padding modes for measuring solid and void minimum length scales, respectively.
@@ -121,14 +121,38 @@ def minimum_length(
     phys_size: Optional[Tuple[float, ...]] = None,
     margin_size: Optional[Tuple[Tuple[float, float], ...]] = None,
     pad_mode: Tuple[str, str] = ('solid', 'void')
+) -> Tuple[float, float]:
+    """
+    Compute the minimum length scales of both solid and void regions in a design pattern.
+
+    Args:
+        arr: A 1d or 2d array that represents a design pattern.
+        phys_size: A tuple that represents the physical size of the design pattern.
+        margin_size: A tuple that represents the physical size near edges that need to be disregarded.
+        pad_mode: A tuple of two strings that represent the padding modes for measuring solid and void minimum length scales, respectively.
+
+    Returns:
+        A tuple of two floats that represent the minimum length scales of solid and void regions, respectively. The unit is the same as that of `phys_size`. If `phys_size` is None, return the minimum length scale in the number of pixels.
+    """
+
+    if isinstance(pad_mode, str): pad_mode = (pad_mode, pad_mode)
+    return min(minimum_length_solid(arr, phys_size, margin_size, pad_mode[0]),
+               minimum_length_void(arr, phys_size, margin_size, pad_mode[1]))
+
+
+def minimum_length_min(
+    arr: np.ndarray,
+    phys_size: Optional[Tuple[float, ...]] = None,
+    margin_size: Optional[Tuple[Tuple[float, float], ...]] = None,
+    pad_mode: Tuple[str, str] = ('solid', 'void')
 ) -> float:
     """
-    For 2d or 3d design patterns, compute the minimum length scale through the difference between morphological opening and closing.
+    For 2d design patterns, compute the minimum length scale through the difference between morphological opening and closing.
     Ideally, the result should be equal to the smaller one between solid and void minimum length scales.
     For 1d design patterns, just return this smaller one after comparing solid and void minimum length scales.
 
     Args:
-        arr: A 1d, 2d, or 3d array that represents a design pattern.
+        arr: A 1d or 2d array that represents a design pattern.
         phys_size: A tuple that represents the physical size of the design pattern.
         margin_size: A tuple that represents the physical size near edges that need to be disregarded.
         pad_mode: A tuple of two strings that represent the padding modes for morphological opening nad closing, respectively.
@@ -162,7 +186,7 @@ def minimum_length(
 
         Args:
             diameter: A float that represents the diameter of the kernel, which acts like a probe.
-            arr: A 2d or 3d array that represents a design pattern.
+            arr: A 2d array that represents a design pattern.
 
         Returns:
             A boolean that indicates whether the difference between opening and closing happens at the regions that exclude the borders between solid and void regions, with the edge regions specified by `margin_size` disregarded.
@@ -308,7 +332,7 @@ def _get_interior(arr, direction, pad_mode):
     Get inner borders, outer borders, or union of both inner and outer borders of solid regions.
 
     Args:
-        arr: A 2d or 3d array that represents a design pattern.
+        arr: A 2d array that represents a design pattern.
         direction: A string that can be "in", "out", or "both" to indicate inner borders, outer borders, and union of inner and outer borders.
 
     Returns:
@@ -572,7 +596,7 @@ def _trim(arr, margin_size, pixel_size):
     Obtain the trimmed array with marginal regions discarded.
 
     Args:
-        arr: A 1d, 2d, or 3d array that represents a design pattern.
+        arr: A 1d or 2d array that represents a design pattern.
         margin_size: A tuple that represents the physical size near edges that need to be disregarded.
         pixel_size: A tuple that represents the physical size of one pixel in the design pattern.
 
