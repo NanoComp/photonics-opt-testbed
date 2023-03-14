@@ -18,7 +18,7 @@ class TestRuler(unittest.TestCase):
         for angle in range(0, 90, 10):
             pattern = rounded_square(resolution, phys_size, declared_mls,
                                      angle)
-            solid_mls = ruler.solid_minimum_length(pattern)
+            solid_mls = ruler.minimum_length_solid(pattern)
             print("Rotation angle of the rounded square: ", angle)
             print("Estimated minimum length scale: ", solid_mls)
             # check if values are almost equal
@@ -30,7 +30,7 @@ class TestRuler(unittest.TestCase):
         diameter = 50
         print("Declared minimum length scale: ", diameter)
         pattern = disc(resolution, phys_size, diameter)
-        solid_mls = ruler.solid_minimum_length(pattern, phys_size)
+        solid_mls = ruler.minimum_length_solid(pattern, phys_size)
         print("Estimated minimum length scale: ", solid_mls)
         # check if values are almost equal
         self.assertAlmostEqual(solid_mls, diameter, None, message, delta=1)
@@ -47,9 +47,9 @@ class TestRuler(unittest.TestCase):
         void_disc = disc(resolution, phys_size, diameter=inner_diameter)
         pattern = solid_disc ^ void_disc  # ring
 
-        solid_mls = ruler.solid_minimum_length(pattern)
-        void_mls = ruler.void_minimum_length(pattern)
-        dual_mls = ruler.dual_minimum_length(pattern)
+        solid_mls = ruler.minimum_length_solid(pattern)
+        void_mls = ruler.minimum_length_void(pattern)
+        dual_mls = ruler.minimum_length(pattern)
         print("Estimated minimum length scale: ", solid_mls, "(solid), ",
               void_mls, "(void)")
 

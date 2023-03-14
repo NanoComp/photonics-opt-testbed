@@ -1,1 +1,1 @@
-from .ruler import solid_minimum_length, void_minimum_length, both_minimum_length, dual_minimum_length, binary_open, binary_close, binary_erode, binary_dilate
+from .ruler import minimum_length_solid, minimum_length_void, minimum_length_solid_void, minimum_length, binary_open, binary_close, binary_erode, binary_dilate

@@ -5,7 +5,7 @@ from typing import Tuple, Optional
 threshold = 0.5  # threshold for binarization
 
 
-def solid_minimum_length(arr: np.ndarray,
+def minimum_length_solid(arr: np.ndarray,
                          phys_size: Optional[Tuple[float, ...]] = None,
                          margin_size: Optional[Tuple[Tuple[float, float],
                                                      ...]] = None,
@@ -65,7 +65,7 @@ def solid_minimum_length(arr: np.ndarray,
     return min_len
 
 
-def void_minimum_length(arr: np.ndarray,
+def minimum_length_void(arr: np.ndarray,
                         phys_size: Optional[Tuple[float, ...]] = None,
                         margin_size: Optional[Tuple[Tuple[float, float],
                                                     ...]] = None,
@@ -89,10 +89,10 @@ def void_minimum_length(arr: np.ndarray,
     elif pad_mode == 'void': pad_mode = 'solid'
     else: pad_mode == 'edge'
 
-    return solid_minimum_length(~arr, phys_size, margin_size, pad_mode)
+    return minimum_length_solid(~arr, phys_size, margin_size, pad_mode)
 
 
-def both_minimum_length(
+def minimum_length_solid_void(
     arr: np.ndarray,
     phys_size: Optional[Tuple[float, ...]] = None,
     margin_size: Optional[Tuple[Tuple[float, float], ...]] = None,
@@ -111,12 +111,12 @@ def both_minimum_length(
         A tuple of two floats that represent the minimum length scales of solid and void regions, respectively. The unit is the same as that of `phys_size`. If `phys_size` is None, return the minimum length scale in the number of pixels.
     """
 
-    return solid_minimum_length(arr, phys_size, margin_size,
-                                pad_mode[0]), void_minimum_length(
+    return minimum_length_solid(arr, phys_size, margin_size,
+                                pad_mode[0]), minimum_length_void(
                                     arr, phys_size, margin_size, pad_mode[1])
 
 
-def dual_minimum_length(
+def minimum_length(
     arr: np.ndarray,
     phys_size: Optional[Tuple[float, ...]] = None,
     margin_size: Optional[Tuple[Tuple[float, float], ...]] = None,
