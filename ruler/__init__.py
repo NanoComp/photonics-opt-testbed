@@ -1,3 +1,1 @@
-from .ruler import minimum_length
-
-# Some code is copied or adapted from Meep at https://github.com/smartalecH/meep/blob/jax_rebase/python/adjoint/filters.py 
+from .ruler import minimum_length_solid, minimum_length_void, minimum_length_solid_void, minimum_length_min, minimum_length, binary_open, binary_close, binary_erode, binary_dilate
