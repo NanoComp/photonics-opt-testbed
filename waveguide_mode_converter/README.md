@@ -139,8 +139,6 @@ converter_meep_min_linewidth_150nm.csv, 151.30, -16.68, -2.08
 converter_meep_min_linewidth_175nm.csv, 163.72, -24.44, -2.80
 converter_meep_min_linewidth_200nm.csv, 303.47, -9.56, -1.58
 converter_meep_min_linewidth_225nm.csv, 362.47, -30.09, -3.99
-converter_meep_no_mirror_sym.csv, 46.875, -26.45, -0.62
-converter_meep_x_mirror_sym.csv, 105.46875, -32.54, -0.18
 converter_schubert_circle_x33491673_w307_s134.csv, 105.46875, -34.11, -0.19
 converter_schubert_notched_x33491673_w183_s159.csv, 105.46875, -30.67, -0.26
 ```
