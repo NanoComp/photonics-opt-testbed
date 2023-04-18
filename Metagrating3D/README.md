@@ -41,4 +41,4 @@ The MEEP results were obtained using `metagrating.meep.py`.
 
 `device.mat` file contains all optimization parameters and final device pattern in matlab format while `device.csv` is the optimized device pattern (2D matrix) in csv format.
 
-The file `device4.dat` is designed by the adjoint solver in MEEP.
+The file `device4.dat` contains the design optimized by the adjoint solver in MEEP.
