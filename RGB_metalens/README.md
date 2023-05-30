@@ -1,16 +1,22 @@
-This is an example of RGB metalens designs. Rasmus [@raelch](https://github.com/raelch) generated designs using his own code and reported the FOMs, which were validated on Meep by Mo [@mochen4](https://github.com/mochen4). Mo also generated designs using Meep.
+This is an example of RGB metalens designs. 
 
-A schematic of the problem setup is shown below. The design region is 10μm by 1μm, with a material of index n=2.4, and lies on a substrate of the same material. The source is a planewave with in-plane (Ex) polarization. The lens tries to focus incident light at 2.4μm away for wavelengths of 450nm, 550nm, and 650nm.
+For Ex polarization and designing lens with substrate, Rasmus [@raelch](https://github.com/raelch) generated designs using his own FEM code and reported the FOMs, which were validated on Meep by Mo [@mochen4](https://github.com/mochen4). Mo also generated designs using Meep and were validated by Rasmus.
+
+A schematic of the problem setup and numerical results are shown below. The design region is 10μm by 1μm, with a material of index n=2.4, and lies on a substrate of the same material. The lens tries to focus incident light at 2.4μm away for wavelengths of 450nm, 550nm, and 650nm.
 
 <p align="center">
-<img width="594" alt="Screen Shot 2022-03-01 at 11 19 20" src="https://user-images.githubusercontent.com/25192039/156206561-cd0fe0f2-a889-49c8-a377-ee085f62df20.png">
+<img width="1113" alt="rgb_ex" src="https://github.com/mochen4/photonics-opt-testbed/assets/25192039/1ce726f5-ec61-4b17-b3fc-4f96a6d5affc">
+<img width="550" alt="Screen Shot 2023-05-29 at 21 13 47" src="https://github.com/mochen4/photonics-opt-testbed/assets/25192039/7b3a2989-d126-46ff-9b92-e5a2ff08a187">
+<img width="546" alt="Screen Shot 2023-05-29 at 21 13 57" src="https://github.com/mochen4/photonics-opt-testbed/assets/25192039/9790cd46-76ce-47c8-9957-caf1f6108120">
 </p>
 
-The script [metalens_check.py](https://github.com/mochen4/photonics-opt-testbed/blob/RGB/RGB_metalens/metalens_check.py) checks different designs under this setup, and reports FOMs and lengthscales. Sample usage: ``python3 metalens_check.py path/to/design_file [--resolution RESOLUTION]``, where the design_file should be in ``.csv`` format, and ``resolution`` is an optional argument for the resolution of the simulation, with a default of 50.
 
-The reported FOM is calculated as an average of |E|^2 over the three wavelengths, and normalized by the intensity when no lens is present. Rasmus designed structures with lengthscales 123nm, 209nm, and 256nm, and reported FOMs of 16, 11.7, and 8.1, respectively. Mo validated the designs on Meep and found FOMs of 14.7, 11, and 7.8.
+For Ez polarization and designing lens without substrate, Wenjin Xue (wenjin.xue@yale.edu) generated a design using her BEM code without enforcing lengthscale constraints, and reported the FOM, which were validated on Meep by Mo. Mo also generated designs using Meep and enforced constraints, and were validated by Wenjin.
 
-Mo generated structures with lengthscales 70nm, 148nm, and 180nm in Meep, and found FOMs of 22.14, 14.21, and 13.86. A plot of FOMs vs Lengthscale is shown below. 
+A schematic of the problem setup and numerical results are shown below. The design region is 10μm by 1μm, with a material of index n=2.4, and lies on a substrate of the same material. The lens tries to focus incident light at 2.4μm away for wavelengths of 450nm, 550nm, and 650nm.
+
 <p align="center">
-<img src="https://github.com/mochen4/photonics-opt-testbed/blob/RGB/RGB_metalens/Result.png" width="600" />
+<img width="1125" alt="rgb_ez" src="https://github.com/mochen4/photonics-opt-testbed/assets/25192039/fd2dbff4-3c70-4efa-a3ae-3bc679dcd43a">
+<img width="552" alt="Screen Shot 2023-05-29 at 21 14 11" src="https://github.com/mochen4/photonics-opt-testbed/assets/25192039/984a9cb2-64e4-40b5-8562-f3be2c5f345f">
+<img width="560" alt="Screen Shot 2023-05-29 at 21 14 17" src="https://github.com/mochen4/photonics-opt-testbed/assets/25192039/50237dbe-f375-4d06-a665-ba70df8c2f5c">
 </p>
