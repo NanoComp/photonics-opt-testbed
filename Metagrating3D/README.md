@@ -29,7 +29,7 @@ As an example, optimized metagrating designs with following parameters can be fo
 - **Deflection angle**: 50 degree
 - **Period**: Px = 1050/sin 50 $^\circ$ nm, Py = 0.5 × 1050 nm
 - **Thickness**: 325 nm
-- **Polarization**: TE and TM
+- **Polarization**: TM
 - **Unit Cell**: Nx = 472, Ny = 180
 
 The diffraction efficiencies for the example devices in this repo are:
