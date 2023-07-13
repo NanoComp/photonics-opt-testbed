@@ -5,7 +5,7 @@ A schematic of the problem setup is shown below.
 ![schematic](/Metagrating3D/metagrating3d.png)
 
 
-The 3D metagratings consist of freeform silicon patterns and deflect normally-incident light (plane wave) to the +1 diffraction order. FOM of this problem is the deflection efficiency in the desired drection for TM polarization light: FOM = eff_TM. The structure is periodic in x, y directions, and uniform in z direction. The relevant parameters are defined below:
+The 3D metagratings consist of freeform silicon patterns and deflect normally-incident light (plane wave) to the +1 diffraction order. The FOM of this problem is the diffraction efficiency in the desired direction for TM polarization light. The structure is periodic in x and y directions, and uniform in z direction. The relevant parameters are defined below:
 
 - **Refractive index**: The refractive index of silicon is 3.45, and refractive index of silica is 1.45.
 
@@ -21,24 +21,26 @@ The 3D metagratings consist of freeform silicon patterns and deflect normally-in
 
 - **Symmetry**: Reflection symmetry in the y-direction (across the x-axis) is enforced in all devices.
 
-- **Efficiency**: Deflection efficiency is defined as the intensity of light deflected to the desired diffraction order, normalized to the light intensity incident from within a semi-infinite silica substrate. 
+- **Efficiency**: Diffraction efficiency is defined as the intensity of light deflected to the desired diffraction order, normalized to the light intensity incident from within a semi-infinite silica substrate. 
 
 As an example, optimized metagrating designs with following parameters can be found in this repo:
 
 - **Wavelength**: 1050 nm
 - **Deflection angle**: 50 degree
-- **Period**: Px = 1050/sin(50) nm, Py = 0.5* 1050 nm
+- **Period**: Px = 1050/sin 50 $^\circ$ nm, Py = 0.5 × 1050 nm
 - **Thickness**: 325 nm
-- **Polarization**: TE and TM
+- **Polarization**: TM
 - **Unit Cell**: Nx = 472, Ny = 180
 
-The deflection efficiencies for the example device in this repo are:
+The diffraction efficiencies for the example devices in this repo are:
 - **Device1**: TM 95.7% (RETICOLO/RCWA), 95.5% (MEEP/FDTD)
-- **Device2**: TM 93.3% (RETICOLO/RCWA), 93.6% (MEEP/FDTD)
+- **Device2**: TM 93.3% (RETICOLO/RCWA), 93.8% (MEEP/FDTD)
 - **Device3**: TM 96.6% (RETICOLO/RCWA), 95.0% (MEEP/FDTD)
+- **Device4**: TM 93.3% (RETICOLO/RCWA), 92.5% (MEEP/FDTD)
+- **Device5**: TM 84.1% (RETICOLO/RCWA), 84.3% (MEEP/FDTD)
 
-The MEEP results were obtained using `metagrating.meep.py`.
+For RETICOLO results, `device1.mat`, `device2.mat`, and `device3.mat` contain all optimization parameters and final design patterns (Nx = 118, Ny = 45) in matlab format, while their corresponding `csv` files contain design patterns interpolated to a high resolution (Nx = 472, Ny = 180).
 
-`device.mat` file contains all optimization parameters and final device pattern in matlab format while `device.csv` is the optimized device pattern (2D matrix) in csv format.
+For MEEP results, `device4.csv` and `device5.csv` contain final design patterns while `device4_interpolated.csv` and `device5_interpolated.csv` contain design patterns interpolated to a high resolution. The files `device5.csv` and `device5_interpolated.csv` contain 1d arrays, which correspond to design patterns composed of stripes.
 
-The file `device4.dat` is designed by the adjoint solver in MEEP.
+The file `metagrating-meep.py` contains the MEEP script that computes the diffraction efficiency of an input design pattern.
