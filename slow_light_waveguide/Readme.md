@@ -27,3 +27,9 @@ The design problem is stated as
 
 The blue print design  with $\eta=0.5$ obtained using the robust optimization formulation considering the parameters above and corresponding performance are shown in the figure below. [Design_Dnum_2.csv](/slow_light_waveguide/Design_Dnum_2.csv) is the corresponding csv format design pattern. 
  [Opt_Band.csv](/slow_light_waveguide/Opt_Band.csv) is the corresponding band structure in csv format with first column for k and [Opt_Group_index.csv](/slow_light_waveguide/Opt_Group_index.csv) is the corresponding group index in csv format with first column for k. [HigRes_DesMatch_Opt_Dnum_2.csv](/slow_light_waveguide/HigRes_DesMatch_Opt_Dnum_2.csv) is the design pattern in high resolution extracted using the contour form  the optimized design.
+
+![schematic](/slow_light_waveguide/Resp_Dnum_2_FF.png)
+
+The optimization history is shown in the figure below.
+
+![schematic](/slow_light_waveguide/Opt_History_SlowLight.png)
