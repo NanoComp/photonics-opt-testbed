@@ -10,7 +10,7 @@ The design problem is stated as
 
  The relevant parameters are defined below:
  - **Discretization**: 408x40 bilinear quadrilateral elements
- - **Regularization**: density filter (filter radius: 1/8a) + projection
+ - **Regularization**: density filtering (filter radius: $0.125a$) + projection
  - **Continuation scheme in the projection**: 	
  
      For $\beta < 50$, set $\beta=1.3 \beta$ every 40 iterations or if  $\max (\Delta \rho ,\Delta f) < 10^{-3}$ and $\min (\Delta \rho ,\Delta f) \geq 10^{-4}$.   
@@ -22,7 +22,7 @@ The design problem is stated as
   
 - **Robust formulation**: $\eta\in [0.35, 0.5, 0.65]$.
 - **Target group index**: $n^*_g=25$
-- **Target $k$ points**: $k = 0.3875, 0.4, 0.4125, 0.425, 0.4375, 0.45, 0.4625$
+- **Target $k$ points**: $ka/(2\pi) = 0.3875, 0.4, 0.4125, 0.425, 0.4375, 0.45, 0.4625$
 - **Initial guess**:  $a_1=0.9$ and $a_2=1.1$  
 
 The blue print design  with $\eta=0.5$ obtained using the robust optimization formulation considering the parameters above and corresponding performance are shown in the figure below. [Design_Dnum_2.csv](/slow_light_waveguide/Design_Dnum_2.csv) is the corresponding csv format design pattern. 
