@@ -43,4 +43,4 @@ For RETICOLO results, `device1.mat`, `device2.mat`, and `device3.mat` contain al
 
 For MEEP results, `device4.csv` and `device5.csv` contain final design patterns while `device4_interpolated.csv` and `device5_interpolated.csv` contain design patterns interpolated to a high resolution. The files `device5.csv` and `device5_interpolated.csv` contain 1d arrays, which correspond to design patterns composed of stripes.
 
-The file `metagrating-meep.py` contains the MEEP script that computes the diffraction efficiency of an input design pattern.
+The file `metagrating_meep.py` contains the MEEP script that computes the diffraction efficiency of an input design pattern.
