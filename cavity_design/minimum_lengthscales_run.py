@@ -3,7 +3,7 @@ import os
 import imageruler
 
 print('Design file, solid minimum lengthscale (nm), void minimum lengthscale (nm), minimum lengthscale (nm)')
-design_size = (1550, 1550)
+design_size = (2000, 2000)
 
 for path in ['Mo/', 'Göktuğ/']:
     files = os.listdir(path)
