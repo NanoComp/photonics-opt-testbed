@@ -39,8 +39,8 @@ The diffraction efficiencies for the example devices in this repo are:
 - **Device4**: TM 93.3% (RETICOLO/RCWA), 92.5% (MEEP/FDTD)
 - **Device5**: TM 84.1% (RETICOLO/RCWA), 84.3% (MEEP/FDTD)
 
-For RETICOLO results, `device1.mat`, `device2.mat`, and `device3.mat` contain all optimization parameters and final design patterns (Nx = 118, Ny = 45) in matlab format, while their corresponding `csv` files contain design patterns interpolated to a high resolution (Nx = 472, Ny = 180).
+For RETICOLO results, `device1.mat`, `device2.mat`, and `device3.mat` contain all optimization parameters. The final design patterns (Nx = 118, Ny = 45) are in `device1.csv`, `device2.csv`, and `device3.csv`, while `device1_interpolated.csv`, `device2_interpolated.csv`, and `device3_interpolated.csv` contain design patterns interpolated to a high resolution (Nx = 472, Ny = 180).
 
 For MEEP results, `device4.csv` and `device5.csv` contain final design patterns while `device4_interpolated.csv` and `device5_interpolated.csv` contain design patterns interpolated to a high resolution. The files `device5.csv` and `device5_interpolated.csv` contain 1d arrays, which correspond to design patterns composed of stripes.
 
-The file `metagrating-meep.py` contains the MEEP script that computes the diffraction efficiency of an input design pattern.
+The file `metagrating_meep.py` contains the MEEP script that computes the diffraction efficiency of an input design pattern.
