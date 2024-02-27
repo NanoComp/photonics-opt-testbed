@@ -66,6 +66,7 @@ design_region_size = mp.Vector3(dx, dy, 0)
 design_region_resolution = int(2 * resolution)
 Nx = int(design_region_size.x * design_region_resolution)
 Ny = int(design_region_size.y * design_region_resolution)
+design_region_resolution = (Nx - 1) / design_region_size.x # correct for +1 factor in recent Meep
 
 # impose a bit "mask" of thickness equal to the filter radius
 # around the edges of the design region in order to prevent
