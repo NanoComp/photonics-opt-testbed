@@ -13,9 +13,15 @@ for path in ['Ex/', 'Ez/']:
         if file_name[-3:] == 'csv':
             design_pattern = np.genfromtxt(path+file_name, delimiter=',')
 
-            if file_name[0].upper() == 'M': design_size = 20*np.array(design_pattern.shape)
-            elif file_name[0].upper() in ('R', 'W'): design_size = 10*np.array(design_pattern.shape)
-            else: AssertionError("Unknown file name.")
+            if file_name[0].upper() == 'M':
+                pixel_size = 20
+            elif file_name[0].upper() in ('R', 'W'):
+                pixel_size = 10
+            else:
+                raise AssertionError("Unknown file name.")
 
-            solid_mls, void_mls = imageruler.minimum_length_solid_void(design_pattern, design_size)
+            binary_design_pattern = design_pattern > 0.5
+            solid_mls_pixels, void_mls_pixels = imageruler.minimum_length_scale(binary_design_pattern)
+            solid_mls = solid_mls_pixels * pixel_size
+            void_mls = void_mls_pixels * pixel_size
             print(path+file_name, solid_mls, void_mls, min(solid_mls, void_mls))
