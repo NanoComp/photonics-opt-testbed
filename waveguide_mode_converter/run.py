@@ -18,6 +18,8 @@ INPUT_PORT_AXIS = 1
 INPUT_PORT_IDX = 0
 OUTPUT_PORT_IDX = 1
 
+pixel_size = 10
+
 parser = argparse.ArgumentParser()
 parser.add_argument(
     'file',
@@ -58,10 +60,11 @@ for filepath in sorted(args.file):
     reflection_dB_worst = np.max(s_params_dB[:, INPUT_PORT_IDX])
     transmission_dB_worst = np.min(s_params_dB[:, OUTPUT_PORT_IDX])
 
-    length_scale = imageruler.minimum_length(
-        model.density(design),
-        tuple(v * params.resolution.to_value(u.nm) for v in model.shape))
-
+    binary_design_pattern = model.density(design) > 0.5
+    solid_mls_pixels, void_mls_pixels = imageruler.minimum_length_scale(binary_design_pattern)
+    solid_mls = solid_mls_pixels * pixel_size
+    void_mls = void_mls_pixels * pixel_size
     print(
-        f'{os.path.basename(filepath)}, {length_scale}, {reflection_dB_worst:.2f}, {transmission_dB_worst:.2f}'
+        f'{os.path.basename(filepath)}, ({solid_mls}, {void_mls}), '
+        f'{reflection_dB_worst:.2f}, {transmission_dB_worst:.2f}'
     )

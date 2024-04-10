@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  schedule:
+      - cron: "0 13 * * 1"  # Every Monday at 9AM EST
+
+jobs:
+  measure-length-scales:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup environment
+        run: |
+            python -m pip install --upgrade pip
+            pip install numpy
+            pip install imageruler
+            pip install ceviche-challenges
+
+      - name: cavity_design
+        run: |
+          cd cavity_design
+          python minimum_lengthscales_run.py
+          cd ..
+
+      - name: Metagrating3D
+        run: |
+          cd Metagrating3D
+          python minimum_lengthscales_run.py
+          cd ..
+
+      - name: RGB_metalens
+        run: |
+          cd RGB_metalens
+          python minimum_lengthscales_run.py
+          cd ..
+
+      - name: slow_light_waveguide
+        run: |
+          cd slow_light_waveguide
+          python minimum_lengthscales_run.py
+          cd ..
+
+      - name: waveguide_mode_converter
+        run: |
+          cd waveguide_mode_converter
+          python run.py designs/converter_generator_circle_6_x47530832_w1_s796.csv 
+          cd ..
