@@ -6,6 +6,7 @@ The simulation itself is generated from the invrs.io challenge gym.
 The subpixel smoothing routine is a first-order approximate, and ported over
 from meep.
 """
+
 import dataclasses
 import functools
 from dataclasses import dataclass
@@ -16,7 +17,10 @@ import jax
 import nlopt
 from invrs_gym import challenges
 from invrs_gym.challenges.base import Challenge
-from invrs_gym.challenges.diffract.metagrating_challenge import METAGRATING_SPEC
+from invrs_gym.challenges.diffract.metagrating_challenge import (
+    METAGRATING_SIM_PARAMS,
+    METAGRATING_SPEC,
+)
 from jax import numpy as jnp
 from matplotlib import pyplot as plt
 from meep import adjoint as mpa
@@ -44,7 +48,7 @@ class OptimizationParams:
 
 
 # The expected results composite type
-Results = Tuple[jnp.ndarray, List[jnp.ndarray], List[float]]
+Results = Tuple[jnp.ndarray, jnp.ndarray, List[jnp.ndarray], List[float]]
 # -------------------------------------------- #
 # Main routines
 # -------------------------------------------- #
@@ -93,11 +97,13 @@ def run_topology_optimization(
 
     # iterate through each bet aepoch
     for current_beta in betas:
-        final_design, current_data, current_results = _run_optimization(
-            starting_design=starting_design,
-            beta=current_beta,
-            num_iters=num_iters,
-            min_lengthscale=min_lengthscale,
+        final_design, projected_design, current_data, current_results = (
+            _run_optimization(
+                starting_design=starting_design,
+                beta=current_beta,
+                num_iters=num_iters,
+                min_lengthscale=min_lengthscale,
+            )
         )
 
         # refresh the starting design with our latest optimized result
@@ -107,7 +113,7 @@ def run_topology_optimization(
         data += current_data
         results += current_results
 
-    return final_design, data, results
+    return final_design, projected_design, data, results
 
 
 # -------------------------------------------- #
@@ -115,6 +121,8 @@ def run_topology_optimization(
 # -------------------------------------------- #
 
 
+# TODO [smartalecH] Use experimental jit compatibility, where we
+# define all the input/output shapes along with the types.
 @agjax.wrap_for_jax
 def jax_conic_filter(input_array: jnp.ndarray, radius: float) -> jnp.ndarray:
     """Jax wrapper for meep's conic filter function."""
@@ -128,6 +136,8 @@ def jax_conic_filter(input_array: jnp.ndarray, radius: float) -> jnp.ndarray:
     )
 
 
+# TODO [smartalecH] Use experimental jit compatibility, where we define all the
+# input/output shapes along with the types.
 @agjax.wrap_for_jax
 def jax_smoothed_projection(x_smoothed: jnp.ndarray, beta: float, eta: float):
     """Jax wrapper for meep's smoothed projection operator."""
@@ -142,6 +152,34 @@ def jax_smoothed_projection(x_smoothed: jnp.ndarray, beta: float, eta: float):
 # -------------------------------------------- #
 # Optimization helper routines
 # -------------------------------------------- #
+
+
+def _latents_to_params(
+    design_vector: jnp.ndarray,
+    optimization_params: OptimizationParams,
+) -> jnp.ndarray:
+    """Transform the latent design weights to the projected weights.
+
+    Args:
+        design_vector: The design vector to compute the loss for.
+        optimization_params: The optimization parameters.
+    Returns:
+        the transformed parameters
+    """
+    design_array = design_vector.reshape(N_x, N_y)
+
+    # enforce symmetry
+    design_array = (design_array + jnp.fliplr(design_array)) / 2
+
+    # Filter the design parameters
+    filtered_array = jax_conic_filter(design_array, optimization_params.filter_radius)
+
+    # Smoothly project the design parameters
+    smoothed_array = jax_smoothed_projection(
+        filtered_array, optimization_params.beta, optimization_params.eta
+    )
+
+    return smoothed_array
 
 
 def _loss_function(
@@ -165,17 +203,8 @@ def _loss_function(
     Returns:
         Tuple: The loss and a tuple containing the smoothed array, response, and efficiency.
     """
-    design_array = design_vector.reshape(N_x, N_y)
-
-    # enforce symmetry
-    design_array = (design_array + jnp.fliplr(design_array)) / 2
-
-    # Filter the design parameters
-    filtered_array = jax_conic_filter(design_array, optimization_params.filter_radius)
-
-    # Smoothly project the design parameters
-    smoothed_array = jax_smoothed_projection(
-        filtered_array, optimization_params.beta, optimization_params.eta
+    smoothed_array = _latents_to_params(
+        design_vector=design_vector, optimization_params=optimization_params
     )
 
     design_params = dataclasses.replace(design_params, array=smoothed_array)
@@ -184,11 +213,14 @@ def _loss_function(
     response, aux = challenge_problem.component.response(design_params)
 
     # Use the same loss quantities as the paper
-    loss = challenge_problem.loss(response)
     metrics = challenge_problem.metrics(response, params=design_params, aux=aux)
+
+    # Rather than optimizing the gym problem's loss function, we'll simply
+    # maximize the raw efficiency, to be consistent with the other
+    # implementations in the testbed.
     efficiency = metrics["average_efficiency"]
 
-    return loss, (smoothed_array, response, efficiency)
+    return efficiency, (smoothed_array, response, efficiency)
 
 
 def nlopt_fom(
@@ -217,7 +249,7 @@ def nlopt_fom(
     data.append(smoothed_array.copy())
     results.append(float(efficiency))
 
-    print("FOM: {:.2f}, Efficiency: {:.2f}%".format(loss_val, efficiency * 100))
+    print("Efficiency: {:.1f}%".format(efficiency * 100))
 
     return float(loss_val)  # explicit cast for nlopt
 
@@ -276,12 +308,67 @@ def _run_optimization(
     solver.set_lower_bounds(0)
     solver.set_upper_bounds(1)
     solver.set_maxeval(num_iters)
-    solver.set_min_objective(nlopt_wrapper)
+    solver.set_max_objective(nlopt_wrapper)
 
     # Run the optimization
     final_design = solver.optimize(starting_design.flatten())
 
-    return final_design, data, results
+    # map the final design to it's projected equivalent
+    projected_design = _latents_to_params(
+        design_vector=final_design, optimization_params=optimization_params
+    )
+
+    return final_design, projected_design, data, results
+
+
+# -------------------------------------------- #
+# Validation
+# -------------------------------------------- #
+
+
+def convergence_check(
+    design: jnp.ndarray, fourier_terms: jnp.ndarray, min_lengthscale: float
+) -> jnp.ndarray:
+    """Run a convergence check by sweeping the number of Fourier terms.
+
+    Args:
+        design: Binary, projected design.
+        fourier_terms: Array of fourier terms over which to sweep.
+        min_lengthscale: Minimum lengthscale (in um).
+
+    Returns:
+        Vector of loss values for each fourier term.
+    """
+
+    filter_radius = mpa.get_conic_radius_from_eta_e(min_lengthscale, DEFAULT_ETA_E)
+
+    FOM_values = []
+    for num_terms in fourier_terms:
+        optimization_params = OptimizationParams(
+            beta=jnp.inf,
+            eta=DEFAULT_ETA,
+            filter_radius=filter_radius,
+        )
+
+        modified_params = METAGRATING_SIM_PARAMS
+        modified_params.approximate_num_terms = num_terms
+
+        # Set up the challenge problem
+        challenge_problem = challenges.metagrating(sim_params=modified_params)
+        design_params = challenge_problem.component.init(jax.random.PRNGKey(0))
+
+        loss_fn = functools.partial(
+            _loss_function,
+            design_params=design_params,
+            optimization_params=optimization_params,
+            challenge_problem=challenge_problem,
+        )
+
+        loss_val, (smoothed_array, response, efficiency) = loss_fn(design)
+
+        FOM_values.append(efficiency)
+
+    return jnp.ndarray(FOM_values)
 
 
 # -------------------------------------------- #
@@ -322,6 +409,8 @@ def visualize_evolution(
 
     plt.savefig(output_filename)
 
+    plt.close("all")
+
 
 # -------------------------------------------- #
 #
@@ -329,7 +418,7 @@ def visualize_evolution(
 
 if __name__ == "__main__":
     # Hyperparameters
-    num_iters = 60
+    num_iters = 20
     min_lengthscale = 0.1
 
     # generate a random initial design
@@ -339,33 +428,40 @@ if __name__ == "__main__":
 
     # Run a round of shape optimization
     if True:
-        final_design, data, results = run_shape_optimization(
+        print("RUNNING SHAPE OPTIMIZATION EXAMPLE...")
+        final_design, projected_design, data, results = run_shape_optimization(
             starting_design=starting_design,
             num_iters=num_iters,
             min_lengthscale=min_lengthscale,
         )
 
+        # cache the projected design weights
+        jnp.savez("shape_optimization_design.npz", design_weights=projected_design)
+
         visualize_evolution(
             data=data,
             results=results,
-            design_samples=[0, 10, 30, 45, -1],
+            design_samples=[0, 4, 9, 14, num_iters-1],
             output_filename="shape_optimization.png",
         )
 
     # Run a round of topology optimization
     if True:
-        betas = [16.0, 64.0, jnp.inf]
+        print("RUNNING TOPOLOGY OPTIMIZATION EXAMPLE...")
+        betas = [8.0, 16.0, jnp.inf]
 
-        final_design, data, results = run_topology_optimization(
+        final_design, projected_design, data, results = run_topology_optimization(
             betas=betas,
             starting_design=starting_design,
             num_iters=num_iters,
             min_lengthscale=min_lengthscale,
         )
 
+        jnp.savez("topology_optimization_design.npz", design_weights=projected_design)
+
         visualize_evolution(
             data=data,
             results=results,
-            design_samples=[0, 20, 50, 100, -1],
+            design_samples=[0, 15, 30, 45, 59],
             output_filename="topology_optimization.png",
         )
