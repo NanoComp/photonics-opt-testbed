@@ -1,5 +1,5 @@
 # This python script is for maximizing the diffraction efficiency of the m=+1 order
-# for a 3D metagrating with a 2D design.
+# for a 2D metagrating.
 
 import meep as mp
 import meep.adjoint as mpa
@@ -95,9 +95,20 @@ sim = mp.Simulation(resolution=resolution,
                     k_point=k_point,
                     eps_averaging=False)
 
-emc = mpa.EigenmodeCoefficient(sim,mp.Volume(center=mp.Vector3(0,0,0.5*sz-dpml),size=mp.Vector3(px,py,0)),
-                               mode=1,eig_parity = mp.EVEN_Y if P_pol else mp.ODD_Y,
-                               kpoint_func=lambda *not_used: kdiff)
+emc = mpa.EigenmodeCoefficient(
+    sim,
+    mp.Volume(
+        center=mp.Vector3(0, 0, 0.5*sz - dpml),
+        size=mp.Vector3(px, py, 0)
+    ),
+    mode=1,
+    eig_parity = mp.EVEN_Y if P_pol else mp.ODD_Y,
+    kpoint_func=lambda *not_used: kdiff,
+    eig_vol=mp.Volume(
+        center=mp.Vector3(0, 0, 0.5*sz - dpml),
+        size=mp.VEctor3(1 / resolution, 1 / resolution, 0)
+    )
+)
 ob_list = [emc]
 
 opt = mpa.OptimizationProblem(simulation=sim,objective_functions=J,objective_arguments=ob_list,
